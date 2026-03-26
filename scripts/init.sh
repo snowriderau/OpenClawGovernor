@@ -224,6 +224,34 @@ if ask_yn "Will you be using the Hermes email agent?"; then
 fi
 
 # ---------------------------------------------------------------------------
+# Section 11: NemoClaw Enterprise Security (optional)
+# ---------------------------------------------------------------------------
+header "11. NemoClaw Enterprise Security (optional)"
+echo
+info "NemoClaw adds NVIDIA OpenShell sandboxing, Privacy Router, and audit"
+info "logging on top of OpenClaw. Agents run in isolated containers with"
+info "policy-gated network access. Currently in alpha preview."
+echo
+USE_NEMOCLAW=false
+if ask_yn "Will you be using NemoClaw for enterprise agent security?"; then
+  USE_NEMOCLAW=true
+  ask NEMOCLAW_REPO "NemoClaw repo path" "${NEMOCLAW_REPO:-\$HOME/NemoClaw}"
+  info "NemoClaw repos: github.com/NVIDIA/NemoClaw + github.com/NVIDIA/OpenShell"
+fi
+
+# ---------------------------------------------------------------------------
+# Section 12: OpenClaw Repository Locations
+# ---------------------------------------------------------------------------
+header "12. OpenClaw Repository Locations"
+echo
+info "Where OpenClaw code lives — used by the Governor for reference."
+echo
+ask OPENCLAW_REPO "OpenClaw repo path (local clone)" "${OPENCLAW_REPO:-}"
+if [[ -z "${OPENCLAW_REPO:-}" ]]; then
+  info "Skipped — Governor will use docs.openclaw.ai for reference."
+fi
+
+# ---------------------------------------------------------------------------
 # Write .env file
 # ---------------------------------------------------------------------------
 header "Writing .env"
@@ -283,6 +311,13 @@ GITHUB_USER="${GITHUB_USER}"
 
 # Email
 EMAIL="${EMAIL:-}"
+
+# NemoClaw (enterprise security layer)
+USE_NEMOCLAW="${USE_NEMOCLAW}"
+NEMOCLAW_REPO="${NEMOCLAW_REPO:-}"
+
+# OpenClaw repo location
+OPENCLAW_REPO="${OPENCLAW_REPO:-}"
 EOF
 
 ok ".env written to ${ENV_FILE}"

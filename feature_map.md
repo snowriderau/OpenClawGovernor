@@ -33,6 +33,17 @@ This template ships with a set of reference features demonstrating the OpenClaw 
 - [ ] GitHub CLI installed and authenticated
 - [ ] Dead model fallbacks cleaned (remove any unauthenticated provider references)
 
+### NemoClaw Enterprise Security ([spec](./specs/FEAT-NEMOCLAW_setup.md)) — Optional
+- [ ] NemoClaw installed (OpenClaw + NVIDIA OpenShell + Privacy Router)
+- [ ] OpenShell runtime installed
+- [ ] First sandbox created and verified
+- [ ] Network policy applied (default-deny + required egress whitelisted)
+- [ ] Privacy Router configured (PII/code/financial → local Nemotron, non-sensitive → cloud)
+- [ ] Inference credentials stored in gateway (not visible to agents)
+- [ ] Audit logging verified
+- [ ] Governor can create/destroy/manage sandboxes via SSH
+- [ ] Per-agent sandbox policies written (domain-locked egress per agent role)
+
 ### Remote Access
 - [ ] Tailscale active on server ({{TAILSCALE_IP}})
 - [ ] Client machine connected to Tailscale

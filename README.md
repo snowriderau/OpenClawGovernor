@@ -16,9 +16,31 @@ Your agents talk to you via Telegram, Slack, or Discord. When you want to change
 
 ## Quick Start
 
-1. **Clone** this repo
-2. **Run** `scripts/init.sh` — it asks questions and configures everything
-3. **Talk to your Governor** — it handles all agent setup from there
+### Don't have OpenClaw yet?
+
+```bash
+# Install OpenClaw
+curl -fsSL https://www.openclaw.ai/install.sh | bash
+
+# Enterprise security? Add NemoClaw (optional — OpenClaw + NVIDIA sandbox + Privacy Router)
+curl -fsSL https://www.nvidia.com/nemoclaw.sh | bash
+```
+
+### Already have OpenClaw installed?
+
+```bash
+# 1. Clone the Governor template
+git clone https://github.com/snowriderau/OpenClawGovernor.git
+cd OpenClawGovernor
+
+# 2. Run the setup wizard — configures everything
+bash scripts/init.sh
+
+# 3. Open your Governor (Claude Code or preferred coding agent)
+#    Tell it: "Set up my agent fleet using this template"
+```
+
+The Governor handles everything from there — agent config, workspace files, systemd services, the lot.
 
 ## How it works
 
