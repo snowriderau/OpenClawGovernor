@@ -1,0 +1,171 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 620" width="800" height="620">
+  <style>
+    text { font-family: -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+    .title { font-size: 16px; font-weight: 700; fill: #1e293b; }
+    .subtitle { font-size: 10px; fill: #64748b; }
+    .box-label { font-size: 12px; font-weight: 600; fill: #fff; }
+    .box-sub { font-size: 9px; fill: rgba(255,255,255,0.85); }
+    .section-label { font-size: 11px; font-weight: 600; fill: #334155; }
+    .badge { font-size: 8px; font-weight: 500; fill: #1e293b; }
+    .legend-text { font-size: 9px; fill: #475569; }
+    .arrow-label { font-size: 9px; fill: #475569; font-weight: 500; }
+    .tier-label { font-size: 8px; fill: rgba(255,255,255,0.7); font-weight: 400; }
+    .add-label { font-size: 10px; fill: #94a3b8; font-style: italic; }
+    .connector { fill: none; stroke-width: 1.5; }
+    .solid { stroke: #334155; }
+    .dashed { stroke: #334155; stroke-dasharray: 6,3; }
+    .dotted { stroke: #94a3b8; stroke-dasharray: 2,3; }
+  </style>
+
+  <defs>
+    <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#334155"/>
+    </marker>
+    <marker id="arrowhead-gray" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#94a3b8"/>
+    </marker>
+    <filter id="shadow" x="-4%" y="-4%" width="108%" height="112%">
+      <feDropShadow dx="0" dy="1" stdDeviation="2" flood-opacity="0.08"/>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="800" height="620" fill="#f8fafc" rx="8"/>
+
+  <!-- Title -->
+  <text x="400" y="30" text-anchor="middle" class="title">OpenClaw Governor -- Multi-Agent Architecture</text>
+  <text x="400" y="44" text-anchor="middle" class="subtitle">Spec-first infrastructure governance via SSH from a separate machine</text>
+
+  <!-- ===== GOVERNOR BOX (Top) ===== -->
+  <rect x="220" y="60" width="360" height="72" rx="8" fill="#2563eb" filter="url(#shadow)"/>
+  <text x="400" y="82" text-anchor="middle" class="box-label" style="font-size:14px">Governor Agent</text>
+  <text x="400" y="96" text-anchor="middle" class="box-sub">Separate Machine (Mac / Laptop) -- Spec-First Workflow</text>
+  <!-- Tool badges -->
+  <rect x="278" y="104" width="60" height="16" rx="8" fill="rgba(255,255,255,0.2)"/>
+  <text x="308" y="115" text-anchor="middle" class="badge" style="fill:#fff">Claude Code</text>
+  <rect x="346" y="104" width="30" height="16" rx="8" fill="rgba(255,255,255,0.2)"/>
+  <text x="361" y="115" text-anchor="middle" class="badge" style="fill:#fff">Git</text>
+  <rect x="384" y="104" width="32" height="16" rx="8" fill="rgba(255,255,255,0.2)"/>
+  <text x="400" y="115" text-anchor="middle" class="badge" style="fill:#fff">SSH</text>
+  <rect x="424" y="104" width="58" height="16" rx="8" fill="rgba(255,255,255,0.2)"/>
+  <text x="453" y="115" text-anchor="middle" class="badge" style="fill:#fff">Specs/Logs</text>
+
+  <!-- Arrow: Governor -> Target -->
+  <line x1="400" y1="132" x2="400" y2="170" class="connector solid" marker-end="url(#arrowhead)"/>
+  <text x="412" y="155" class="arrow-label">SSH + OpenClaw API</text>
+
+  <!-- ===== TARGET MACHINE CONTAINER ===== -->
+  <rect x="40" y="175" width="720" height="390" rx="10" fill="none" stroke="#cbd5e1" stroke-width="1.5" stroke-dasharray="8,4"/>
+  <text x="60" y="195" class="section-label">Target Linux Machine ({{HOSTNAME}})</text>
+
+  <!-- Gateway -->
+  <rect x="310" y="205" width="180" height="38" rx="6" fill="#16a34a" filter="url(#shadow)"/>
+  <text x="400" y="224" text-anchor="middle" class="box-label">OpenClaw Gateway</text>
+  <text x="400" y="236" text-anchor="middle" class="tier-label">Port {{GATEWAY_PORT}}</text>
+
+  <!-- Arrow: Gateway -> Orchestrator -->
+  <line x1="400" y1="243" x2="400" y2="265" class="connector solid" marker-end="url(#arrowhead)"/>
+
+  <!-- Orchestrator -->
+  <rect x="295" y="265" width="210" height="44" rx="6" fill="#16a34a" filter="url(#shadow)"/>
+  <text x="400" y="285" text-anchor="middle" class="box-label">ops-commander</text>
+  <text x="400" y="298" text-anchor="middle" class="tier-label">Orchestrator -- Tier 1 -- Cloud Model</text>
+
+  <!-- ===== LEFT BRANCH: Tier 2 Directors ===== -->
+  <!-- Branch line from orchestrator left -->
+  <path d="M 340 309 L 340 330 L 175 330 L 175 345" class="connector solid" marker-end="url(#arrowhead)"/>
+  <path d="M 340 330 L 175 330" class="connector solid"/>
+
+  <text x="175" y="340" text-anchor="middle" class="section-label" style="font-size:10px; fill:#ea580c">Tier 2 -- Directors</text>
+
+  <!-- sec-sentinel -->
+  <rect x="72" y="350" width="160" height="40" rx="6" fill="#ea580c" filter="url(#shadow)"/>
+  <text x="152" y="370" text-anchor="middle" class="box-label">sec-sentinel</text>
+  <text x="152" y="382" text-anchor="middle" class="tier-label">Security Auditor -- Cloud</text>
+
+  <!-- Arrow orchestrator -> sec-sentinel -->
+  <path d="M 340 309 L 340 330 L 152 330 L 152 350" class="connector solid" marker-end="url(#arrowhead)"/>
+
+  <!-- deploy-chief -->
+  <rect x="72" y="400" width="160" height="40" rx="6" fill="#ea580c" filter="url(#shadow)"/>
+  <text x="152" y="420" text-anchor="middle" class="box-label">deploy-chief</text>
+  <text x="152" y="432" text-anchor="middle" class="tier-label">Deploy Manager -- Cloud</text>
+
+  <!-- Arrow from sec-sentinel down -->
+  <line x1="152" y1="390" x2="152" y2="400" class="connector solid" marker-end="url(#arrowhead)"/>
+
+  <!-- alert-relay -->
+  <rect x="72" y="450" width="160" height="40" rx="6" fill="#ea580c" filter="url(#shadow)"/>
+  <text x="152" y="470" text-anchor="middle" class="box-label">alert-relay</text>
+  <text x="152" y="482" text-anchor="middle" class="tier-label">Notification Hub -- Local/Cloud</text>
+
+  <!-- Arrow from deploy-chief down -->
+  <line x1="152" y1="440" x2="152" y2="450" class="connector solid" marker-end="url(#arrowhead)"/>
+
+  <!-- Dashed arrow out to notifications -->
+  <path d="M 72 470 L 20 470 L 20 530" class="connector dashed" marker-end="url(#arrowhead)"/>
+  <rect x="0" y="532" width="120" height="24" rx="5" fill="#fef3c7" stroke="#f59e0b" stroke-width="1"/>
+  <text x="60" y="548" text-anchor="middle" class="badge" style="fill:#92400e; font-size:9px">Telegram / Slack / Email</text>
+
+  <!-- ===== RIGHT BRANCH: Tier 3 Workers ===== -->
+  <path d="M 460 309 L 460 330 L 610 330 L 610 345" class="connector solid" marker-end="url(#arrowhead)"/>
+
+  <text x="610" y="340" text-anchor="middle" class="section-label" style="font-size:10px; fill:#6b7280">Tier 3 -- Workers</text>
+
+  <!-- gpu-runner -->
+  <rect x="540" y="350" width="160" height="40" rx="6" fill="#6b7280" filter="url(#shadow)"/>
+  <text x="620" y="370" text-anchor="middle" class="box-label">gpu-runner</text>
+  <text x="620" y="382" text-anchor="middle" class="tier-label">GPU Worker -- Local Model</text>
+
+  <!-- Arrow orchestrator -> gpu-runner -->
+  <path d="M 460 309 L 460 330 L 620 330 L 620 350" class="connector solid" marker-end="url(#arrowhead)"/>
+
+  <!-- web-scout -->
+  <rect x="540" y="400" width="160" height="40" rx="6" fill="#6b7280" filter="url(#shadow)"/>
+  <text x="620" y="420" text-anchor="middle" class="box-label">web-scout</text>
+  <text x="620" y="432" text-anchor="middle" class="tier-label">Research Agent -- Cloud Mini</text>
+
+  <line x1="620" y1="390" x2="620" y2="400" class="connector solid" marker-end="url(#arrowhead)"/>
+
+  <!-- log-parser -->
+  <rect x="540" y="450" width="160" height="40" rx="6" fill="#6b7280" filter="url(#shadow)"/>
+  <text x="620" y="470" text-anchor="middle" class="box-label">log-parser</text>
+  <text x="620" y="482" text-anchor="middle" class="tier-label">Log Analyzer -- Local Model</text>
+
+  <line x1="620" y1="440" x2="620" y2="450" class="connector solid" marker-end="url(#arrowhead)"/>
+
+  <!-- ===== EXTENSIBILITY: Dotted "add your agents" ===== -->
+  <!-- Left side -->
+  <line x1="152" y1="490" x2="152" y2="520" class="connector dotted"/>
+  <text x="152" y="530" text-anchor="middle" class="add-label">+ Add your agents</text>
+
+  <!-- Right side -->
+  <line x1="620" y1="490" x2="620" y2="520" class="connector dotted"/>
+  <text x="620" y="530" text-anchor="middle" class="add-label">+ Add your agents</text>
+
+  <!-- ===== LEGEND ===== -->
+  <rect x="260" y="570" width="290" height="42" rx="6" fill="#fff" stroke="#e2e8f0" stroke-width="1"/>
+  <text x="275" y="584" class="legend-text" style="font-weight:600">Legend:</text>
+
+  <!-- Solid line -->
+  <line x1="275" y1="598" x2="300" y2="598" stroke="#334155" stroke-width="1.5"/>
+  <text x="305" y="602" class="legend-text">Spawn / Dispatch</text>
+
+  <!-- Dashed line -->
+  <line x1="390" y1="598" x2="415" y2="598" stroke="#334155" stroke-width="1.5" stroke-dasharray="6,3"/>
+  <text x="420" y="602" class="legend-text">Notify External</text>
+
+  <!-- Color dots -->
+  <circle cx="282" y="584" r="4" fill="#2563eb"/>
+  <text x="290" y="588" class="legend-text">Governor</text>
+  <circle cx="340" y="584" r="4" fill="#16a34a"/>
+  <text x="348" y="588" class="legend-text">Core</text>
+  <circle cx="380" y="584" r="4" fill="#ea580c"/>
+  <text x="388" y="588" class="legend-text">Tier 2</text>
+  <circle cx="425" y="584" r="4" fill="#6b7280"/>
+  <text x="433" y="588" class="legend-text">Tier 3</text>
+
+  <!-- Dotted line legend -->
+  <line x1="480" y1="584" x2="505" y2="584" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="2,3"/>
+  <text x="510" y="588" class="legend-text">Extensible</text>
+</svg>

@@ -1,0 +1,23 @@
+# Environment and secrets
+.env
+*.env
+secrets/
+credentials/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# Node modules (if MCP servers added)
+node_modules/
+package-lock.json
+
+# Claude local settings (user-specific)
+.claude/settings.local.json
