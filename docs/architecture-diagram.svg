@@ -82,11 +82,25 @@
   <line x1="60" y1="460" x2="1210" y2="460" stroke="#1e293b" stroke-width="1" stroke-dasharray="6,4"/>
   <line x1="60" y1="686" x2="1210" y2="686" stroke="#1e293b" stroke-width="1" stroke-dasharray="6,4"/>
 
+  <!-- ===== ZONE BOUNDARIES ===== -->
+
+  <!-- Governor Zone (outside OpenClaw) -->
+  <rect x="420" y="90" width="420" height="155" rx="18" fill="none" stroke="#0ea5e9" stroke-width="2" stroke-dasharray="8,4" opacity="0.3"/>
+  <text x="830" y="108" text-anchor="end" fill="#0ea5e9" font-size="9" font-weight="600" letter-spacing="2" opacity="0.5">GOVERNOR ZONE — SEPARATE MACHINE</text>
+
+  <!-- OpenClaw Zone (all agents) -->
+  <rect x="50" y="258" width="1100" height="630" rx="20" fill="#0f1729" opacity="0.5"/>
+  <rect x="50" y="258" width="1100" height="630" rx="20" fill="none" stroke="#10b981" stroke-width="2.5" stroke-dasharray="10,5" opacity="0.35"/>
+  <text x="1140" y="280" text-anchor="end" fill="#10b981" font-size="10" font-weight="700" letter-spacing="3" opacity="0.5">OPENCLAW FLEET — TARGET MACHINE</text>
+
   <!-- ===== CONNECTION LINES (behind cards) ===== -->
 
-  <!-- Governor → Atlas (SSH dashed) -->
-  <line x1="630" y1="226" x2="630" y2="282" stroke="#0ea5e9" stroke-width="1.5" stroke-dasharray="6,3" opacity="0.6"/>
-  <text x="645" y="260" fill="#0ea5e9" font-size="9" opacity="0.8">SSH</text>
+  <!-- Governor → Atlas (SSH — crosses zone boundary) -->
+  <line x1="630" y1="226" x2="630" y2="258" stroke="#0ea5e9" stroke-width="2.5" stroke-dasharray="8,4" opacity="0.7"/>
+  <line x1="630" y1="258" x2="630" y2="282" stroke="#0ea5e9" stroke-width="2.5" stroke-dasharray="8,4" opacity="0.7"/>
+  <!-- SSH boundary crossing indicator -->
+  <rect x="605" y="248" width="50" height="20" rx="6" fill="#0a0e1a" stroke="#0ea5e9" stroke-width="1.5" opacity="0.9"/>
+  <text x="630" y="262" text-anchor="middle" fill="#0ea5e9" font-size="9" font-weight="700">SSH</text>
 
   <!-- Atlas → Conductor (spawn solid) -->
   <path d="M 540 418 Q 380 440 320 476" fill="none" stroke="#8b5cf6" stroke-width="1.5" opacity="0.4"/>
@@ -112,14 +126,14 @@
 
   <!-- ===== GOVERNOR TIER ===== -->
   <g filter="url(#shadow)">
-    <rect x="460" y="100" width="340" height="130" rx="14" fill="url(#cardBg)" stroke="#0ea5e9" stroke-width="2.5" opacity="0.95"/>
+    <rect x="460" y="100" width="340" height="130" rx="14" fill="#0c1a2e" stroke="#0ea5e9" stroke-width="3" opacity="0.98" filter="url(#glowBlue)"/>
 
     <!-- Hexagon icon -->
     <polygon points="490,155 510,130 550,130 570,155 550,180 510,180" fill="url(#govGrad)" opacity="0.9"/>
     <text x="530" y="159" text-anchor="middle" fill="#fff" font-size="10" font-weight="700">GOV</text>
 
     <text x="588" y="145" fill="#0ea5e9" font-size="12" font-weight="700" letter-spacing="1">GOVERNOR</text>
-    <text x="588" y="162" fill="#94a3b8" font-size="11">Claude Code on Mac / Remote</text>
+    <text x="588" y="162" fill="#94a3b8" font-size="11">Any coding agent — separate machine</text>
 
     <!-- Badge row -->
     <rect x="588" y="170" width="110" height="20" rx="10" fill="#0ea5e9" opacity="0.12"/>
