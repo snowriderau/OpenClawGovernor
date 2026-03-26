@@ -1,0 +1,42 @@
+# =============================================================================
+# OpenClaw Governor — Example Cron Jobs
+# =============================================================================
+# These are installed by the Governor on the target machine.
+# User crontab: crontab -e (as {{USERNAME}})
+#
+# NOTE: Openclaw also has built-in cron via `openclaw cron add`.
+# These system cron entries are for tasks that run OUTSIDE the
+# Openclaw gateway (health checks, backups, system maintenance).
+# =============================================================================
+
+# Weekly security scan — Monday 10am
+# Triggers Atlas to run the security audit workflow and report to notification channel
+0 10 * * 1 /usr/bin/curl -sf http://127.0.0.1:{{GATEWAY_PORT}}/api/v1/sessions -X POST -H 'Content-Type: application/json' -d '{"agent":"main","message":"Run weekly security scan. Check system packages, service status, agent permissions, and report findings to notification channel."}' >> /home/{{USERNAME}}/.local/state/{{AGENT_MAIN}}/cron-security.log 2>&1
+
+# Daily health check — 8am
+# Quick system health verification via the watchdog script
+0 8 * * * /home/{{USERNAME}}/.openclaw/workspace/workspaces/main/scripts/watchdog-healthcheck.sh >> /home/{{USERNAME}}/.local/state/{{AGENT_MAIN}}/cron-health.log 2>&1
+
+# Nightly backup — 2am (if backup.sh is deployed)
+0 2 * * * /home/{{USERNAME}}/scripts/backup.sh >> /home/{{USERNAME}}/.local/state/backup/cron-backup.log 2>&1
+
+# =============================================================================
+# Openclaw built-in cron (managed via CLI, NOT this file)
+# =============================================================================
+# These run INSIDE the Openclaw gateway with full agent context.
+# Add them via: openclaw cron add <agent> <schedule> <prompt>
+#
+# Examples from a real deployment:
+#
+#   # Atlas daily news digest — 7am
+#   openclaw cron add main "0 7 * * *" "Check news: current events, markets, AI developments. Deliver digest to notification channel."
+#
+#   # Conductor project scan — every 60 minutes
+#   openclaw cron add pm "0 * * * *" "Scan all project TASKS.md files. Identify stalled work, unblock where possible, escalate to Atlas if needed."
+#
+#   # Atlas inbox check — every 30 minutes during business hours
+#   openclaw cron add main "*/30 8-18 * * 1-5" "Dispatch mailbot to check inbox. Report anything urgent."
+#
+# List cron jobs:  openclaw cron list
+# Remove a job:    openclaw cron remove <id>
+# =============================================================================

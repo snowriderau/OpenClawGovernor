@@ -100,16 +100,20 @@ echo
 # ---------------------------------------------------------------------------
 # Section 1: Machine identity
 # ---------------------------------------------------------------------------
-header "1. Linux Machine Identity"
+header "1. Machine Identity"
 
-ask HOSTNAME    "Hostname (e.g. myserver)"        "${HOSTNAME:-my-linux-box}"
-ask USERNAME    "Linux username"                   "${USERNAME:-$(whoami)}"
+ask HOSTNAME    "Hostname of your machine (e.g. myserver)"  "${HOSTNAME:-my-linux-box}"
+ask USERNAME    "Username on the machine"                    "${USERNAME:-$(whoami)}"
 
 while true; do
-  ask LAN_IP "LAN IP address" "${LAN_IP:-192.168.1.x}"
+  ask LAN_IP "LAN IP address of the machine" "${LAN_IP:-192.168.1.x}"
   if validate_ip "$LAN_IP"; then break
   else err "Invalid IP format. Try again."; fi
 done
+
+ask DISTRO      "OS distribution (e.g. Ubuntu 24.04, Pop!_OS)" "${DISTRO:-Ubuntu 24.04}"
+ask OWNER_NAME  "Your name"                                     "${OWNER_NAME:-$(whoami)}"
+ask TIMEZONE    "Timezone (e.g. America/New_York)"              "${TIMEZONE:-$(cat /etc/timezone 2>/dev/null || echo 'UTC')}"
 
 # ---------------------------------------------------------------------------
 # Section 2: Tailscale (optional)
@@ -159,6 +163,8 @@ header "5. Hardware and Inference"
 ask GPU           "GPU model (e.g. RTX 4090)"             "${GPU:-RTX 4090}"
 ask INFERENCE_PORT "Local inference port (LM Studio / Ollama)" "${INFERENCE_PORT:-1234}"
 ask GATEWAY_PORT  "Openclaw gateway port"                  "${GATEWAY_PORT:-18789}"
+ask MODEL_DIR     "Model storage directory"                "${MODEL_DIR:-/opt/models}"
+ask PROJECTS_DIR  "Projects directory on target machine"   "${PROJECTS_DIR:-/home/${USERNAME}/projects}"
 
 # ---------------------------------------------------------------------------
 # Section 6: Models
@@ -234,6 +240,9 @@ cat > "$ENV_FILE" <<EOF
 HOSTNAME="${HOSTNAME}"
 USERNAME="${USERNAME}"
 LAN_IP="${LAN_IP}"
+DISTRO="${DISTRO}"
+OWNER_NAME="${OWNER_NAME}"
+TIMEZONE="${TIMEZONE}"
 
 # Tailscale VPN
 TAILSCALE_IP="${TAILSCALE_IP:-}"
@@ -251,6 +260,10 @@ GPU="${GPU}"
 # Inference ports
 INFERENCE_PORT="${INFERENCE_PORT}"
 GATEWAY_PORT="${GATEWAY_PORT}"
+
+# Directories
+MODEL_DIR="${MODEL_DIR}"
+PROJECTS_DIR="${PROJECTS_DIR}"
 
 # Models
 PRIMARY_MODEL="${PRIMARY_MODEL}"
@@ -309,13 +322,23 @@ do_replace() {
   done < <(find "$REPO_ROOT" \( -name "*.md" -o -name "*.svg" -o -name "*.json" -o -name "*.sh" \) -not -path "*/_source/*" -print0 2>/dev/null)
 }
 
+# NOTE: Not all {{PLACEHOLDER}} tokens are replaced by this script.
+# Tokens like {{CPU}}, {{RAM}}, {{COMPANY}}, {{NAS_HOST}} etc. are
+# context-specific — the Governor populates them as it discovers
+# your environment during its first SSH session.
+
 # Core identity replacements
 do_replace "HOSTNAME"          "$HOSTNAME"
 do_replace "USERNAME"          "$USERNAME"
 do_replace "LAN_IP"            "$LAN_IP"
+do_replace "DISTRO"            "$DISTRO"
+do_replace "OWNER_NAME"        "$OWNER_NAME"
+do_replace "TIMEZONE"          "$TIMEZONE"
 do_replace "GPU"               "$GPU"
 do_replace "INFERENCE_PORT"    "$INFERENCE_PORT"
 do_replace "GATEWAY_PORT"      "$GATEWAY_PORT"
+do_replace "MODEL_DIR"         "$MODEL_DIR"
+do_replace "PROJECTS_DIR"      "$PROJECTS_DIR"
 do_replace "PRIMARY_MODEL"     "$PRIMARY_MODEL"
 do_replace "LOCAL_MODEL"       "$LOCAL_MODEL"
 do_replace "SECONDARY_MODEL"   "$SECONDARY_MODEL"
@@ -395,12 +418,14 @@ echo
 
 echo "  ${BOLD}Next steps:${RESET}"
 echo "  1. Review .env and verify all values are correct"
-echo "  2. Check remaining {{PLACEHOLDER}} tokens in template files (if any)"
-echo "  3. Copy openclaw.json template to ~/.openclaw/ on your Linux machine"
-echo "  4. Populate each agent's agentDir workspace files (IDENTITY.md, TOOLS.md, etc.)"
-echo "  5. Start the gateway: systemctl --user start openclaw-gateway.service"
-echo "  6. Verify end-to-end: send a message and confirm Atlas responds"
-echo
-echo "  ${DIM}See docs/best-practices.md for operational guidance.${RESET}"
-echo "  ${DIM}See docs/faq.md for common questions.${RESET}"
+echo "  2. Open your Governor (Claude Code or preferred coding agent)"
+echo "  3. Tell it: 'Set up OpenClaw on my machine using this template'"
+echo "  4. The Governor handles everything from there — agent config,"
+echo "     workspace files, systemd services, the lot."
+echo ""
+echo "  ${BOLD}Governor commands available:${RESET}"
+echo "  /new-feature         — Add a new capability"
+echo "  /agent-improvement   — Review and fix agent issues"
+echo "  /create-task         — Execute a task against an existing feature"
+echo "  /security_audit      — Run a security audit"
 echo
