@@ -54,7 +54,11 @@ The Governor handles everything from there — agent config, workspace files, sy
 
 No single agent has the full picture AND the full toolkit. The orchestrator sees everything but can't execute. Workers execute but don't know the broader goal. This is the security model — architecture, not restrictions.
 
-> See the [architecture diagram](docs/architecture-diagram.svg) and [agent registry](specs/AGENT_REGISTRY.md) for the full fleet breakdown.
+<p align="center">
+  <img src="docs/architecture-diagram.svg" alt="OpenClaw Governor architecture — four tiers: Governor (oversight, separate machine), Orchestrator (Atlas), Directors (Conductor, Forge, Hermes), Workers (Bolt, Scout, Courier, Sentinel)" width="100%">
+</p>
+
+> Architecture details: [full SVG](docs/architecture-diagram.svg) | [agent registry](specs/AGENT_REGISTRY.md)
 
 ## What the Governor does for you
 
