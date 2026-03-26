@@ -1,71 +1,74 @@
 # OpenClaw Governor Template
 
-A template for running a structured Openclaw agent fleet on any machine. This repo holds specs, audit logs, security baselines, and feature progress — not application code. Application code and agent workspaces live on the machine itself.
+Run an autonomous AI agent fleet on your own machine. You do the thinking, the robots do the work.
 
-Run `scripts/init.sh` to configure this template for your environment.
+## What is this?
 
-## Navigation
+This template sets up **OpenClaw** — an open-source framework for running persistent AI agents on your hardware — with a **Governor** layer that oversees, improves, and manages the entire fleet. You never touch config files. You just tell the Governor what you need.
 
-### Product Context
-- [Problem & Goals](problem.md) — Security objectives and threat model
-- [Users & Roles](users.md) — Who accesses the system
-- [Requirements](requirements.md) — Security requirements and compliance
-- [Architecture](architecture.md) — System design and components
-- [Feature Map](feature_map.md) — All features and their status
+The Governor (Claude Code, Codex, or any coding AI agent you like) sits separately from the agent fleet. It monitors agents, fixes issues, deploys new ones, and writes corrective rules when things go wrong. The system gets smarter every time something fails.
 
-### Specifications
-- [Agent Registry](specs/AGENT_REGISTRY.md) — Full Openclaw fleet reference
-- [All specs](specs/) — Individual feature specs
+Your agents talk to you via Telegram, Slack, or Discord. When you want to change or improve the system, you talk to the Governor. That's it.
 
-### Runtime State
-- [Active State](.agent/memory/active_state.md) — Current tasks and blockers
-- [Task Queue](.agent/memory/task_queue.md) — Prioritized work items
-- [Backlog](.agent/memory/backlog.md) — Future improvements
-- [Failure Log](.agent/memory/failures.md) — Issues and resolutions
+**Any hardware. Any GPU. Any OS.** Raspberry Pi to server rack — the architecture is the same.
 
-### Workflows (Governor Commands)
-- [Incident Response](.claude/commands/incident_response.md) — Handle security issues
-- [Machine Recovery](.claude/commands/machine_recovery.md) — Diagnose and recover from outages
-- [Patch Management](.claude/commands/patch_management.md) — System updates
-- [Security Audit](.claude/commands/security_audit.md) — Comprehensive system audit
+> New here? Read the [FAQ](docs/faq.md) for the full picture.
 
 ## Quick Start
 
-1. Clone this repo to your local machine
-2. Run `scripts/init.sh` to set up your environment and placeholders
-3. Tell your Governor what you need — it handles all agent configuration automatically
+1. **Clone** this repo
+2. **Run** `scripts/init.sh` — it asks questions and configures everything
+3. **Talk to your Governor** — it handles all agent setup from there
 
-## Repo Structure
+## How it works
+
+**Three tiers, domain-locked agents, no single point of failure:**
+
+| Tier | Role | Example |
+|------|------|---------|
+| **Orchestrator** | Coordinates the fleet, talks to you, never executes | Atlas |
+| **Directors** | Own a domain (code, email, projects), can dispatch workers | Forge, Hermes, Conductor |
+| **Workers** | Execute tasks, don't know WHY, data never leaves the machine | Bolt (local GPU), Scout, Courier, Sentinel |
+
+No single agent has the full picture AND the full toolkit. The orchestrator sees everything but can't execute. Workers execute but don't know the broader goal. This is the security model — architecture, not restrictions.
+
+> See the [architecture diagram](docs/architecture-diagram.svg) and [agent registry](specs/AGENT_REGISTRY.md) for the full fleet breakdown.
+
+## What the Governor does for you
+
+- **Deploys agents** — "I need an agent for email triage" → Governor builds it, configures workspace files, sets up spawn rules
+- **Fixes agents** — agent failing? Governor reads logs, identifies the issue, adds missing tools, rewrites instructions
+- **Writes all config** — you never touch `openclaw.json` or workspace files. Governor writes them.
+- **Creates specs automatically** — say "new feature: backup to NAS" and the Governor writes the spec, dispatches agents, tracks progress
+- **Runs security audits** — weekly automated review of agent permissions, system state, and recommendations
+- **Self-corrects** — every mistake becomes a permanent rule in `CLAUDE.md`. The system learns from failures.
+
+## What's in this repo
+
+This repo is the Governor's workspace — not application code. Application code and agent workspaces live on the target machine.
 
 ```
-.agent/
-  memory/          # Active state, task queue, failures log
-.claude/
-  commands/        # Governor commands + workflows (slash commands)
-  mcp-lmstudio/    # MCP server for local inference integration
-  rules/           # Openclaw config reference
-  skills/          # Openclaw config skill
-specs/             # Feature specs and agent registry
-docs/              # Best practices, FAQ, architecture diagram
-scripts/           # Setup and initialization
-CLAUDE.md          # Project instructions and self-correction table
-architecture.md    # System design and components
-feature_map.md     # All features and their status
-problem.md         # Security objectives and threat model
-requirements.md    # Security requirements
-users.md           # Who accesses the system
+CLAUDE.md              # Governor instructions + self-correction table
+feature_map.md         # All features and their status
+specs/                 # Feature specs and agent registry
+.agent/memory/         # Runtime state (tasks, backlog, failures)
+.claude/commands/      # Governor commands (/agent-improvement, /new-feature, etc.)
+.claude/skills/        # OpenClaw config reference (the crown jewel)
+docs/                  # Best practices, FAQ, workspace examples
+scripts/               # Setup and initialization
 ```
 
-## Capabilities
+## Key resources
 
-- **Openclaw Agent Fleet** — Autonomous agents with notification integration, delegation hierarchy, and local GPU inference
-- **Local LLM Serving** — LM Studio, Ollama, or vLLM with OpenAI-compatible API for on-device inference
-- **Autonomous Domain Agents** — Specialized agents for code, email, infrastructure, security, DevOps, and research workloads
-- **Agent Improvement Workflow** — Governor continuously reviews, fixes, and optimises agents (`/agent-improvement`)
-- **Security Baseline** — Automated audits, vulnerability scanning, hardening rules
-- **MCP LM Studio Server** — Model Context Protocol bridge to local models
-- **Notification Pipeline** — Agent-to-owner alerting via configurable channels
-- **Battle-Tested Workspace Examples** — Real production workspace files for [orchestrator](docs/workspace-examples/orchestrator-atlas/), [director](docs/workspace-examples/director-forge/), and [worker](docs/workspace-examples/worker-bolt/) tiers
+| What | Where |
+|------|-------|
+| Full FAQ | [docs/faq.md](docs/faq.md) |
+| Best practices | [docs/best-practices.md](docs/best-practices.md) |
+| Workspace file examples | [docs/workspace-examples/](docs/workspace-examples/) |
+| Agent registry | [specs/AGENT_REGISTRY.md](specs/AGENT_REGISTRY.md) |
+| Escalation protocol | [agent_escalation_protocol.md](agent_escalation_protocol.md) |
+| Feature map | [feature_map.md](feature_map.md) |
+| Architecture | [architecture.md](architecture.md) |
 
 ## License
 

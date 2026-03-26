@@ -1,0 +1,15 @@
+[Unit]
+Description=Run OpenClaw watchdog healthcheck periodically
+
+[Timer]
+# Wait 3 minutes after boot before first run (gives services time to start)
+OnBootSec=3m
+# Then run every 30 minutes while the system is up
+OnUnitActiveSec=30m
+# Allow up to 1 minute of scheduling slack (reduces wake-up spikes)
+AccuracySec=1m
+# Re-run any missed executions after suspend/resume
+Persistent=true
+
+[Install]
+WantedBy=timers.target

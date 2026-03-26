@@ -1,0 +1,64 @@
+[Unit]
+Description=Local LLM Inference Server
+# Start after network is up
+After=network-online.target
+Wants=network-online.target
+# If model files live on a mounted drive, wait for it before starting.
+# Governor: uncomment and update the path if {{MODEL_DIR}} is a separate mount.
+# After=local-fs.target
+# RequiresMountsFor={{MODEL_DIR}}
+
+[Service]
+# ---------------------------------------------------------------------------
+# ExecStart — uncomment ONE of the following blocks depending on which
+# inference backend this deployment uses. Leave the others commented out.
+# Governor: replace {{USERNAME}} with the Linux user, and update paths/ports.
+# ---------------------------------------------------------------------------
+
+# --- Option 1: LM Studio (AppImage via Xvfb for headless operation) ---
+# Requires: xvfb-run installed, LM Studio AppImage downloaded to home dir
+# Governor: update the AppImage filename to match the installed version.
+ExecStart=/usr/bin/xvfb-run --auto-servernum \
+  /home/{{USERNAME}}/LM-Studio-*.AppImage \
+  --headless \
+  --port {{INFERENCE_HOST##*:}}
+
+# --- Option 2: Ollama ---
+# Requires: ollama installed (https://ollama.com/download/linux)
+# Governor: set OLLAMA_HOST env below if binding to non-default address.
+# ExecStart=/usr/local/bin/ollama serve
+
+# --- Option 3: vLLM (OpenAI-compatible API server) ---
+# Requires: vllm installed in the Python env, model downloaded
+# Governor: replace --model path with the actual model name or local path.
+# ExecStart=/home/{{USERNAME}}/.venv/bin/python -m vllm.entrypoints.openai.api_server \
+#   --model {{MODEL_DIR}}/your-model-name \
+#   --host 0.0.0.0 \
+#   --port {{INFERENCE_HOST##*:}}
+
+# ---------------------------------------------------------------------------
+# Restart policy — inference servers can OOM or crash; always bring them back
+# ---------------------------------------------------------------------------
+Restart=always
+RestartSec=10
+# Give the process up to 2 minutes to start (model loading is slow)
+TimeoutStartSec=120
+
+# ---------------------------------------------------------------------------
+# Environment
+# Governor: set INFERENCE_HOST to the bind address:port, e.g. 127.0.0.1:1234
+# ---------------------------------------------------------------------------
+Environment=HOME=/home/{{USERNAME}}
+Environment=PATH=/home/{{USERNAME}}/.local/bin:/usr/local/bin:/usr/bin:/bin
+
+# Uncomment for Ollama to bind on a specific address:
+# Environment=OLLAMA_HOST={{INFERENCE_HOST}}
+
+# ---------------------------------------------------------------------------
+# Logging — append stdout/stderr to a state log for watchdog inspection
+# ---------------------------------------------------------------------------
+StandardOutput=append:/home/{{USERNAME}}/.local/state/{{AGENT_MAIN}}/inference.log
+StandardError=append:/home/{{USERNAME}}/.local/state/{{AGENT_MAIN}}/inference.log
+
+[Install]
+WantedBy=default.target

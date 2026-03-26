@@ -1,0 +1,31 @@
+[Unit]
+Description=OpenClaw Gateway
+# Wait for network before starting — gateway needs to bind and reach upstream services
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+# Governor: replace {{USERNAME}} with the Linux user running the agent stack.
+# Replace {{GATEWAY_PORT}} with the port OpenClaw gateway should bind on (e.g. 18789).
+# The node path assumes npm-global install; adjust if using a different install method.
+ExecStart=/usr/bin/node /home/{{USERNAME}}/.npm-global/lib/node_modules/openclaw/dist/index.js gateway --port {{GATEWAY_PORT}}
+
+# Always restart on any exit — this is a long-running daemon
+Restart=always
+RestartSec=5
+
+# Ensure HOME is set correctly so OpenClaw can find its config at ~/.openclaw/
+Environment=HOME=/home/{{USERNAME}}
+
+# Explicit PORT env in case OpenClaw reads it from environment instead of CLI flag
+Environment=OPENCLAW_GATEWAY_PORT={{GATEWAY_PORT}}
+
+# Include npm-global bin on PATH so openclaw CLI tools are available to the process
+Environment=PATH=/home/{{USERNAME}}/.npm-global/bin:/usr/local/bin:/usr/bin:/bin
+
+# Optional: uncomment to write stdout/stderr to a dedicated log file
+# StandardOutput=append:/home/{{USERNAME}}/.local/state/openclaw/gateway.log
+# StandardError=append:/home/{{USERNAME}}/.local/state/openclaw/gateway.log
+
+[Install]
+WantedBy=default.target
