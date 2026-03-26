@@ -1,171 +1,402 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 620" width="800" height="620">
-  <style>
-    text { font-family: -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
-    .title { font-size: 16px; font-weight: 700; fill: #1e293b; }
-    .subtitle { font-size: 10px; fill: #64748b; }
-    .box-label { font-size: 12px; font-weight: 600; fill: #fff; }
-    .box-sub { font-size: 9px; fill: rgba(255,255,255,0.85); }
-    .section-label { font-size: 11px; font-weight: 600; fill: #334155; }
-    .badge { font-size: 8px; font-weight: 500; fill: #1e293b; }
-    .legend-text { font-size: 9px; fill: #475569; }
-    .arrow-label { font-size: 9px; fill: #475569; font-weight: 500; }
-    .tier-label { font-size: 8px; fill: rgba(255,255,255,0.7); font-weight: 400; }
-    .add-label { font-size: 10px; fill: #94a3b8; font-style: italic; }
-    .connector { fill: none; stroke-width: 1.5; }
-    .solid { stroke: #334155; }
-    .dashed { stroke: #334155; stroke-dasharray: 6,3; }
-    .dotted { stroke: #94a3b8; stroke-dasharray: 2,3; }
-  </style>
-
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1260 1000" font-family="'Segoe UI', system-ui, -apple-system, sans-serif">
   <defs>
-    <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
-      <path d="M0,0 L8,3 L0,6 Z" fill="#334155"/>
-    </marker>
-    <marker id="arrowhead-gray" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
-      <path d="M0,0 L8,3 L0,6 Z" fill="#94a3b8"/>
-    </marker>
-    <filter id="shadow" x="-4%" y="-4%" width="108%" height="112%">
-      <feDropShadow dx="0" dy="1" stdDeviation="2" flood-opacity="0.08"/>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0a0e1a"/>
+      <stop offset="100%" stop-color="#0d1225"/>
+    </linearGradient>
+    <linearGradient id="cardBg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#141b2d"/>
+      <stop offset="100%" stop-color="#111827"/>
+    </linearGradient>
+    <linearGradient id="govGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0ea5e9"/>
+      <stop offset="100%" stop-color="#0284c7"/>
+    </linearGradient>
+    <linearGradient id="atlasGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#10b981"/>
+      <stop offset="100%" stop-color="#059669"/>
+    </linearGradient>
+    <linearGradient id="conductorGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#8b5cf6"/>
+      <stop offset="100%" stop-color="#6d28d9"/>
+    </linearGradient>
+    <linearGradient id="forgeGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f59e0b"/>
+      <stop offset="100%" stop-color="#d97706"/>
+    </linearGradient>
+    <linearGradient id="hermesGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#06b6d4"/>
+      <stop offset="100%" stop-color="#0891b2"/>
+    </linearGradient>
+    <linearGradient id="boltGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#6366f1"/>
+      <stop offset="100%" stop-color="#4f46e5"/>
+    </linearGradient>
+    <linearGradient id="scoutGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#14b8a6"/>
+      <stop offset="100%" stop-color="#0d9488"/>
+    </linearGradient>
+    <linearGradient id="courierGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#64748b"/>
+      <stop offset="100%" stop-color="#475569"/>
+    </linearGradient>
+    <linearGradient id="sentinelGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ef4444"/>
+      <stop offset="100%" stop-color="#dc2626"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#10b981"/>
+      <stop offset="100%" stop-color="#06b6d4"/>
+    </linearGradient>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="2" stdDeviation="5" flood-color="#000" flood-opacity="0.5"/>
+    </filter>
+    <filter id="glowBlue">
+      <feGaussianBlur stdDeviation="4" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
     </filter>
   </defs>
 
   <!-- Background -->
-  <rect width="800" height="620" fill="#f8fafc" rx="8"/>
+  <rect width="1260" height="1000" fill="url(#bg)"/>
+
+  <!-- Subtle grid -->
+  <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+    <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1a2235" stroke-width="0.5"/>
+  </pattern>
+  <rect width="1260" height="1000" fill="url(#grid)" opacity="0.4"/>
 
   <!-- Title -->
-  <text x="400" y="30" text-anchor="middle" class="title">OpenClaw Governor -- Multi-Agent Architecture</text>
-  <text x="400" y="44" text-anchor="middle" class="subtitle">Spec-first infrastructure governance via SSH from a separate machine</text>
+  <text x="630" y="48" text-anchor="middle" fill="#e2e8f0" font-size="26" font-weight="700" letter-spacing="1">OpenClaw Governor Architecture</text>
+  <text x="630" y="72" text-anchor="middle" fill="#64748b" font-size="13" letter-spacing="2">MULTI-AGENT ORCHESTRATION · SECURITY BY ISOLATION · LOCAL + CLOUD INFERENCE</text>
+  <line x1="400" y1="84" x2="860" y2="84" stroke="url(#accent)" stroke-width="2" opacity="0.6"/>
 
-  <!-- ===== GOVERNOR BOX (Top) ===== -->
-  <rect x="220" y="60" width="360" height="72" rx="8" fill="#2563eb" filter="url(#shadow)"/>
-  <text x="400" y="82" text-anchor="middle" class="box-label" style="font-size:14px">Governor Agent</text>
-  <text x="400" y="96" text-anchor="middle" class="box-sub">Separate Machine (Mac / Laptop) -- Spec-First Workflow</text>
-  <!-- Tool badges -->
-  <rect x="278" y="104" width="60" height="16" rx="8" fill="rgba(255,255,255,0.2)"/>
-  <text x="308" y="115" text-anchor="middle" class="badge" style="fill:#fff">Claude Code</text>
-  <rect x="346" y="104" width="30" height="16" rx="8" fill="rgba(255,255,255,0.2)"/>
-  <text x="361" y="115" text-anchor="middle" class="badge" style="fill:#fff">Git</text>
-  <rect x="384" y="104" width="32" height="16" rx="8" fill="rgba(255,255,255,0.2)"/>
-  <text x="400" y="115" text-anchor="middle" class="badge" style="fill:#fff">SSH</text>
-  <rect x="424" y="104" width="58" height="16" rx="8" fill="rgba(255,255,255,0.2)"/>
-  <text x="453" y="115" text-anchor="middle" class="badge" style="fill:#fff">Specs/Logs</text>
+  <!-- TIER LABELS (left margin) -->
+  <text x="30" y="175" fill="#334155" font-size="10" font-weight="600" letter-spacing="3" transform="rotate(-90, 30, 175)">GOVERNOR</text>
+  <text x="30" y="340" fill="#334155" font-size="10" font-weight="600" letter-spacing="3" transform="rotate(-90, 30, 340)">ORCHESTRATOR</text>
+  <text x="30" y="565" fill="#334155" font-size="10" font-weight="600" letter-spacing="3" transform="rotate(-90, 30, 565)">DIRECTORS</text>
+  <text x="30" y="800" fill="#334155" font-size="10" font-weight="600" letter-spacing="3" transform="rotate(-90, 30, 800)">WORKERS</text>
 
-  <!-- Arrow: Governor -> Target -->
-  <line x1="400" y1="132" x2="400" y2="170" class="connector solid" marker-end="url(#arrowhead)"/>
-  <text x="412" y="155" class="arrow-label">SSH + OpenClaw API</text>
+  <!-- Tier separator lines -->
+  <line x1="60" y1="248" x2="1210" y2="248" stroke="#1e293b" stroke-width="1" stroke-dasharray="6,4"/>
+  <line x1="60" y1="460" x2="1210" y2="460" stroke="#1e293b" stroke-width="1" stroke-dasharray="6,4"/>
+  <line x1="60" y1="686" x2="1210" y2="686" stroke="#1e293b" stroke-width="1" stroke-dasharray="6,4"/>
 
-  <!-- ===== TARGET MACHINE CONTAINER ===== -->
-  <rect x="40" y="175" width="720" height="390" rx="10" fill="none" stroke="#cbd5e1" stroke-width="1.5" stroke-dasharray="8,4"/>
-  <text x="60" y="195" class="section-label">Target Linux Machine ({{HOSTNAME}})</text>
+  <!-- ===== CONNECTION LINES (behind cards) ===== -->
 
-  <!-- Gateway -->
-  <rect x="310" y="205" width="180" height="38" rx="6" fill="#16a34a" filter="url(#shadow)"/>
-  <text x="400" y="224" text-anchor="middle" class="box-label">OpenClaw Gateway</text>
-  <text x="400" y="236" text-anchor="middle" class="tier-label">Port {{GATEWAY_PORT}}</text>
+  <!-- Governor → Atlas (SSH dashed) -->
+  <line x1="630" y1="226" x2="630" y2="282" stroke="#0ea5e9" stroke-width="1.5" stroke-dasharray="6,3" opacity="0.6"/>
+  <text x="645" y="260" fill="#0ea5e9" font-size="9" opacity="0.8">SSH</text>
 
-  <!-- Arrow: Gateway -> Orchestrator -->
-  <line x1="400" y1="243" x2="400" y2="265" class="connector solid" marker-end="url(#arrowhead)"/>
+  <!-- Atlas → Conductor (spawn solid) -->
+  <path d="M 540 418 Q 380 440 320 476" fill="none" stroke="#8b5cf6" stroke-width="1.5" opacity="0.4"/>
+  <!-- Atlas → Forge (spawn solid) -->
+  <path d="M 590 418 Q 590 440 630 476" fill="none" stroke="#f59e0b" stroke-width="1.5" opacity="0.4"/>
+  <!-- Atlas → Hermes (spawn solid) -->
+  <path d="M 680 418 Q 800 440 920 476" fill="none" stroke="#06b6d4" stroke-width="1.5" opacity="0.4"/>
 
-  <!-- Orchestrator -->
-  <rect x="295" y="265" width="210" height="44" rx="6" fill="#16a34a" filter="url(#shadow)"/>
-  <text x="400" y="285" text-anchor="middle" class="box-label">ops-commander</text>
-  <text x="400" y="298" text-anchor="middle" class="tier-label">Orchestrator -- Tier 1 -- Cloud Model</text>
+  <!-- Conductor → Bolt (solid) -->
+  <path d="M 240 644 Q 200 658 200 700" fill="none" stroke="#6366f1" stroke-width="1.2" opacity="0.35"/>
+  <!-- Conductor → Scout -->
+  <path d="M 340 644 Q 420 658 480 700" fill="none" stroke="#14b8a6" stroke-width="1.2" opacity="0.35"/>
 
-  <!-- ===== LEFT BRANCH: Tier 2 Directors ===== -->
-  <!-- Branch line from orchestrator left -->
-  <path d="M 340 309 L 340 330 L 175 330 L 175 345" class="connector solid" marker-end="url(#arrowhead)"/>
-  <path d="M 340 330 L 175 330" class="connector solid"/>
+  <!-- Forge → Bolt (solid) -->
+  <path d="M 600 644 Q 420 658 240 700" fill="none" stroke="#6366f1" stroke-width="1.2" opacity="0.3"/>
+  <!-- Forge → Scout -->
+  <path d="M 660 644 Q 580 658 530 700" fill="none" stroke="#14b8a6" stroke-width="1.2" opacity="0.3"/>
 
-  <text x="175" y="340" text-anchor="middle" class="section-label" style="font-size:10px; fill:#ea580c">Tier 2 -- Directors</text>
+  <!-- Escalate back lines (dotted, upward) — agents → Atlas -->
+  <path d="M 190 476 Q 190 450 580 420" fill="none" stroke="#10b981" stroke-width="1" stroke-dasharray="3,4" opacity="0.25"/>
+  <path d="M 680 476 Q 680 450 620 420" fill="none" stroke="#10b981" stroke-width="1" stroke-dasharray="3,4" opacity="0.25"/>
+  <path d="M 960 476 Q 860 450 650 420" fill="none" stroke="#10b981" stroke-width="1" stroke-dasharray="3,4" opacity="0.25"/>
 
-  <!-- sec-sentinel -->
-  <rect x="72" y="350" width="160" height="40" rx="6" fill="#ea580c" filter="url(#shadow)"/>
-  <text x="152" y="370" text-anchor="middle" class="box-label">sec-sentinel</text>
-  <text x="152" y="382" text-anchor="middle" class="tier-label">Security Auditor -- Cloud</text>
+  <!-- ===== GOVERNOR TIER ===== -->
+  <g filter="url(#shadow)">
+    <rect x="460" y="100" width="340" height="130" rx="14" fill="url(#cardBg)" stroke="#0ea5e9" stroke-width="2.5" opacity="0.95"/>
 
-  <!-- Arrow orchestrator -> sec-sentinel -->
-  <path d="M 340 309 L 340 330 L 152 330 L 152 350" class="connector solid" marker-end="url(#arrowhead)"/>
+    <!-- Hexagon icon -->
+    <polygon points="490,155 510,130 550,130 570,155 550,180 510,180" fill="url(#govGrad)" opacity="0.9"/>
+    <text x="530" y="159" text-anchor="middle" fill="#fff" font-size="10" font-weight="700">GOV</text>
 
-  <!-- deploy-chief -->
-  <rect x="72" y="400" width="160" height="40" rx="6" fill="#ea580c" filter="url(#shadow)"/>
-  <text x="152" y="420" text-anchor="middle" class="box-label">deploy-chief</text>
-  <text x="152" y="432" text-anchor="middle" class="tier-label">Deploy Manager -- Cloud</text>
+    <text x="588" y="145" fill="#0ea5e9" font-size="12" font-weight="700" letter-spacing="1">GOVERNOR</text>
+    <text x="588" y="162" fill="#94a3b8" font-size="11">Claude Code on Mac / Remote</text>
 
-  <!-- Arrow from sec-sentinel down -->
-  <line x1="152" y1="390" x2="152" y2="400" class="connector solid" marker-end="url(#arrowhead)"/>
+    <!-- Badge row -->
+    <rect x="588" y="170" width="110" height="20" rx="10" fill="#0ea5e9" opacity="0.12"/>
+    <text x="643" y="184" text-anchor="middle" fill="#0ea5e9" font-size="10" font-weight="600">Oversight Layer</text>
+    <rect x="706" y="170" width="75" height="20" rx="10" fill="#1e293b"/>
+    <text x="743" y="184" text-anchor="middle" fill="#64748b" font-size="10">No Exec</text>
 
-  <!-- alert-relay -->
-  <rect x="72" y="450" width="160" height="40" rx="6" fill="#ea580c" filter="url(#shadow)"/>
-  <text x="152" y="470" text-anchor="middle" class="box-label">alert-relay</text>
-  <text x="152" y="482" text-anchor="middle" class="tier-label">Notification Hub -- Local/Cloud</text>
+    <text x="490" y="214" fill="#64748b" font-size="10">Monitors agents · Writes rules · Delegates never executes · Sees everything</text>
+  </g>
 
-  <!-- Arrow from deploy-chief down -->
-  <line x1="152" y1="440" x2="152" y2="450" class="connector solid" marker-end="url(#arrowhead)"/>
+  <!-- ===== TIER 1: ATLAS (Orchestrator) ===== -->
+  <g filter="url(#shadow)">
+    <rect x="390" y="268" width="480" height="176" rx="16" fill="url(#cardBg)" stroke="#10b981" stroke-width="2.5" opacity="0.95"/>
 
-  <!-- Dashed arrow out to notifications -->
-  <path d="M 72 470 L 20 470 L 20 530" class="connector dashed" marker-end="url(#arrowhead)"/>
-  <rect x="0" y="532" width="120" height="24" rx="5" fill="#fef3c7" stroke="#f59e0b" stroke-width="1"/>
-  <text x="60" y="548" text-anchor="middle" class="badge" style="fill:#92400e; font-size:9px">Telegram / Slack / Email</text>
+    <!-- Hexagon icon -->
+    <polygon points="424,330 446,303 490,303 512,330 490,357 446,357" fill="url(#atlasGrad)" opacity="0.9"/>
+    <text x="468" y="335" text-anchor="middle" fill="#fff" font-size="12" font-weight="700">ATLAS</text>
 
-  <!-- ===== RIGHT BRANCH: Tier 3 Workers ===== -->
-  <path d="M 460 309 L 460 330 L 610 330 L 610 345" class="connector solid" marker-end="url(#arrowhead)"/>
+    <text x="530" y="322" fill="#10b981" font-size="13" font-weight="700" letter-spacing="1">ORCHESTRATOR</text>
+    <text x="530" y="340" fill="#94a3b8" font-size="11">User-facing coordinator. Delegates to directors. Synthesizes reports.</text>
+    <text x="530" y="356" fill="#64748b" font-size="10.5" font-style="italic">Never does domain work directly.</text>
 
-  <text x="610" y="340" text-anchor="middle" class="section-label" style="font-size:10px; fill:#6b7280">Tier 3 -- Workers</text>
+    <!-- Model badge -->
+    <rect x="530" y="364" width="125" height="20" rx="10" fill="#10b981" opacity="0.15"/>
+    <text x="592" y="378" text-anchor="middle" fill="#10b981" font-size="10" font-weight="600">{{PRIMARY_MODEL}} (cloud)</text>
+    <rect x="662" y="364" width="60" height="20" rx="10" fill="#1e293b"/>
+    <text x="692" y="378" text-anchor="middle" fill="#60a5fa" font-size="10">Cloud</text>
 
-  <!-- gpu-runner -->
-  <rect x="540" y="350" width="160" height="40" rx="6" fill="#6b7280" filter="url(#shadow)"/>
-  <text x="620" y="370" text-anchor="middle" class="box-label">gpu-runner</text>
-  <text x="620" y="382" text-anchor="middle" class="tier-label">GPU Worker -- Local Model</text>
+    <!-- Tools row -->
+    <text x="415" y="404" fill="#475569" font-size="9" font-weight="600" letter-spacing="2">TOOLS</text>
+    <rect x="415" y="412" width="82" height="18" rx="5" fill="#1e293b"/>
+    <text x="456" y="425" text-anchor="middle" fill="#64748b" font-size="9">Notify Channel</text>
+    <rect x="503" y="412" width="58" height="18" rx="5" fill="#1e293b"/>
+    <text x="532" y="425" text-anchor="middle" fill="#64748b" font-size="9">Canvas</text>
+    <rect x="567" y="412" width="55" height="18" rx="5" fill="#1e293b"/>
+    <text x="594" y="425" text-anchor="middle" fill="#64748b" font-size="9">Spawn</text>
+    <rect x="628" y="412" width="42" height="18" rx="5" fill="#1e293b"/>
+    <text x="649" y="425" text-anchor="middle" fill="#64748b" font-size="9">TTS</text>
+    <rect x="676" y="412" width="62" height="18" rx="5" fill="#1e293b"/>
+    <text x="707" y="425" text-anchor="middle" fill="#64748b" font-size="9">Browser</text>
+    <rect x="744" y="412" width="62" height="18" rx="5" fill="#1e293b"/>
+    <text x="775" y="425" text-anchor="middle" fill="#64748b" font-size="9">Memory</text>
 
-  <!-- Arrow orchestrator -> gpu-runner -->
-  <path d="M 460 309 L 460 330 L 620 330 L 620 350" class="connector solid" marker-end="url(#arrowhead)"/>
+    <!-- Tier 1 label inside -->
+    <rect x="764" y="276" width="90" height="20" rx="6" fill="#10b981" opacity="0.1"/>
+    <text x="809" y="290" text-anchor="middle" fill="#10b981" font-size="9" font-weight="700" letter-spacing="1">TIER 1</text>
+  </g>
 
-  <!-- web-scout -->
-  <rect x="540" y="400" width="160" height="40" rx="6" fill="#6b7280" filter="url(#shadow)"/>
-  <text x="620" y="420" text-anchor="middle" class="box-label">web-scout</text>
-  <text x="620" y="432" text-anchor="middle" class="tier-label">Research Agent -- Cloud Mini</text>
+  <!-- ===== TIER 2: DIRECTORS ===== -->
 
-  <line x1="620" y1="390" x2="620" y2="400" class="connector solid" marker-end="url(#arrowhead)"/>
+  <!-- Conductor (pm) -->
+  <g filter="url(#shadow)">
+    <rect x="68" y="476" width="300" height="196" rx="14" fill="url(#cardBg)" stroke="#8b5cf6" stroke-width="2.5" opacity="0.9"/>
+    <polygon points="88,528 108,503 148,503 168,528 148,553 108,553" fill="url(#conductorGrad)" opacity="0.9"/>
+    <text x="128" y="533" text-anchor="middle" fill="#fff" font-size="9" font-weight="700">CONDUCTOR</text>
+    <text x="184" y="520" fill="#8b5cf6" font-size="10" font-weight="700" letter-spacing="1">PROJECT MANAGER</text>
+    <rect x="184" y="526" width="115" height="18" rx="9" fill="#8b5cf6" opacity="0.15"/>
+    <text x="241" y="539" text-anchor="middle" fill="#8b5cf6" font-size="10">{{PRIMARY_MODEL}} (cloud)</text>
 
-  <!-- log-parser -->
-  <rect x="540" y="450" width="160" height="40" rx="6" fill="#6b7280" filter="url(#shadow)"/>
-  <text x="620" y="470" text-anchor="middle" class="box-label">log-parser</text>
-  <text x="620" y="482" text-anchor="middle" class="tier-label">Log Analyzer -- Local Model</text>
+    <rect x="300" y="526" width="55" height="18" rx="9" fill="#1e293b"/>
+    <text x="327" y="539" text-anchor="middle" fill="#60a5fa" font-size="9">Cloud</text>
 
-  <line x1="620" y1="440" x2="620" y2="450" class="connector solid" marker-end="url(#arrowhead)"/>
+    <!-- Domain badge -->
+    <rect x="88" y="562" width="155" height="16" rx="5" fill="#8b5cf6" opacity="0.08"/>
+    <text x="165" y="574" text-anchor="middle" fill="#8b5cf6" font-size="9" font-weight="600">PROJECT METADATA ONLY</text>
 
-  <!-- ===== EXTENSIBILITY: Dotted "add your agents" ===== -->
-  <!-- Left side -->
-  <line x1="152" y1="490" x2="152" y2="520" class="connector dotted"/>
-  <text x="152" y="530" text-anchor="middle" class="add-label">+ Add your agents</text>
+    <text x="88" y="594" fill="#94a3b8" font-size="10.5">Scans project state, prioritizes work,</text>
+    <text x="88" y="608" fill="#94a3b8" font-size="10.5">delegates to workers. Never executes.</text>
 
-  <!-- Right side -->
-  <line x1="620" y1="490" x2="620" y2="520" class="connector dotted"/>
-  <text x="620" y="530" text-anchor="middle" class="add-label">+ Add your agents</text>
+    <text x="88" y="628" fill="#475569" font-size="9" font-weight="600" letter-spacing="1">TOOLS</text>
+    <rect x="88" y="634" width="50" height="16" rx="4" fill="#1e293b"/>
+    <text x="113" y="646" text-anchor="middle" fill="#64748b" font-size="9">Spawn</text>
+    <rect x="144" y="634" width="58" height="16" rx="4" fill="#1e293b"/>
+    <text x="173" y="646" text-anchor="middle" fill="#64748b" font-size="9">Browser</text>
+    <rect x="208" y="634" width="55" height="16" rx="4" fill="#1e293b"/>
+    <text x="235" y="646" text-anchor="middle" fill="#64748b" font-size="9">Memory</text>
+
+    <!-- Tier 2 label -->
+    <rect x="299" y="484" width="60" height="18" rx="5" fill="#8b5cf6" opacity="0.1"/>
+    <text x="329" y="497" text-anchor="middle" fill="#8b5cf6" font-size="9" font-weight="700" letter-spacing="1">TIER 2</text>
+  </g>
+
+  <!-- Forge (engineer) -->
+  <g filter="url(#shadow)">
+    <rect x="395" y="476" width="300" height="196" rx="14" fill="url(#cardBg)" stroke="#f59e0b" stroke-width="2.5" opacity="0.9"/>
+    <polygon points="415,528 435,503 475,503 495,528 475,553 435,553" fill="url(#forgeGrad)" opacity="0.9"/>
+    <text x="455" y="533" text-anchor="middle" fill="#fff" font-size="10" font-weight="700">FORGE</text>
+    <text x="511" y="520" fill="#f59e0b" font-size="10" font-weight="700" letter-spacing="1">SENIOR ENGINEER</text>
+    <rect x="511" y="526" width="115" height="18" rx="9" fill="#f59e0b" opacity="0.15"/>
+    <text x="568" y="539" text-anchor="middle" fill="#f59e0b" font-size="10">{{PRIMARY_MODEL}} (cloud)</text>
+    <rect x="630" y="526" width="55" height="18" rx="9" fill="#1e293b"/>
+    <text x="657" y="539" text-anchor="middle" fill="#60a5fa" font-size="9">Cloud</text>
+
+    <!-- Domain badge -->
+    <rect x="415" y="562" width="100" height="16" rx="5" fill="#f59e0b" opacity="0.08"/>
+    <text x="465" y="574" text-anchor="middle" fill="#f59e0b" font-size="9" font-weight="600">CODE DOMAIN</text>
+
+    <text x="415" y="594" fill="#94a3b8" font-size="10.5">Plans, builds, fixes, ships code.</text>
+    <text x="415" y="608" fill="#94a3b8" font-size="10.5">No email, no file storage.</text>
+
+    <text x="415" y="628" fill="#475569" font-size="9" font-weight="600" letter-spacing="1">TOOLS</text>
+    <rect x="415" y="634" width="50" height="16" rx="4" fill="#1e293b"/>
+    <text x="440" y="646" text-anchor="middle" fill="#64748b" font-size="9">Coding</text>
+    <rect x="471" y="634" width="42" height="16" rx="4" fill="#1e293b"/>
+    <text x="492" y="646" text-anchor="middle" fill="#64748b" font-size="9">Exec</text>
+    <rect x="519" y="634" width="38" height="16" rx="4" fill="#1e293b"/>
+    <text x="538" y="646" text-anchor="middle" fill="#64748b" font-size="9">Git</text>
+    <rect x="563" y="634" width="50" height="16" rx="4" fill="#1e293b"/>
+    <text x="588" y="646" text-anchor="middle" fill="#64748b" font-size="9">Spawn</text>
+  </g>
+
+  <!-- Hermes (mail) -->
+  <g filter="url(#shadow)">
+    <rect x="722" y="476" width="300" height="196" rx="14" fill="url(#cardBg)" stroke="#06b6d4" stroke-width="2.5" opacity="0.9"/>
+    <polygon points="742,528 762,503 802,503 822,528 802,553 762,553" fill="url(#hermesGrad)" opacity="0.9"/>
+    <text x="782" y="533" text-anchor="middle" fill="#fff" font-size="10" font-weight="700">HERMES</text>
+    <text x="838" y="520" fill="#06b6d4" font-size="10" font-weight="700" letter-spacing="1">MAIL AGENT</text>
+    <rect x="838" y="526" width="120" height="18" rx="9" fill="#06b6d4" opacity="0.15"/>
+    <text x="898" y="539" text-anchor="middle" fill="#06b6d4" font-size="10">{{PRIMARY_MODEL}} (cloud)</text>
+    <rect x="963" y="526" width="50" height="18" rx="9" fill="#1e293b"/>
+    <text x="988" y="539" text-anchor="middle" fill="#60a5fa" font-size="9">Cloud</text>
+
+    <!-- Domain badge -->
+    <rect x="742" y="562" width="125" height="16" rx="5" fill="#06b6d4" opacity="0.08"/>
+    <text x="804" y="574" text-anchor="middle" fill="#06b6d4" font-size="9" font-weight="600">EMAIL DOMAIN ONLY</text>
+
+    <text x="742" y="594" fill="#94a3b8" font-size="10.5">GTD triage, follow-up tracking, data</text>
+    <text x="742" y="608" fill="#94a3b8" font-size="10.5">extraction. Cannot touch code or infra.</text>
+
+    <text x="742" y="628" fill="#475569" font-size="9" font-weight="600" letter-spacing="1">TOOLS</text>
+    <rect x="742" y="634" width="62" height="16" rx="4" fill="#1e293b"/>
+    <text x="773" y="646" text-anchor="middle" fill="#64748b" font-size="9">Email CLI</text>
+    <rect x="810" y="634" width="42" height="16" rx="4" fill="#1e293b"/>
+    <text x="831" y="646" text-anchor="middle" fill="#64748b" font-size="9">Read</text>
+    <rect x="858" y="634" width="42" height="16" rx="4" fill="#1e293b"/>
+    <text x="879" y="646" text-anchor="middle" fill="#64748b" font-size="9">Write</text>
+  </g>
+
+  <!-- ===== TIER 3: WORKERS ===== -->
+
+  <!-- Bolt (worker / local) -->
+  <g filter="url(#shadow)">
+    <rect x="68" y="702" width="265" height="170" rx="14" fill="url(#cardBg)" stroke="#6366f1" stroke-width="2.5" opacity="0.9"/>
+    <polygon points="88,748 106,725 142,725 160,748 142,771 106,771" fill="url(#boltGrad)" opacity="0.9"/>
+    <text x="124" y="753" text-anchor="middle" fill="#fff" font-size="10" font-weight="700">BOLT</text>
+    <text x="175" y="740" fill="#6366f1" font-size="10" font-weight="700" letter-spacing="1">COMPUTE WORKER</text>
+
+    <!-- Local GPU badge (green) -->
+    <rect x="175" y="748" width="95" height="18" rx="9" fill="#22c55e" opacity="0.12"/>
+    <circle cx="188" cy="757" r="4" fill="#22c55e" opacity="0.8"/>
+    <text x="232" y="761" text-anchor="middle" fill="#22c55e" font-size="9" font-weight="600">LOCAL GPU</text>
+
+    <!-- Security badge -->
+    <rect x="88" y="782" width="148" height="15" rx="5" fill="#22c55e" opacity="0.08"/>
+    <text x="162" y="793" text-anchor="middle" fill="#22c55e" font-size="8.5" font-weight="600">DATA NEVER LEAVES BOX</text>
+
+    <text x="88" y="816" fill="#94a3b8" font-size="10">Executes compute tasks locally.</text>
+    <text x="88" y="830" fill="#64748b" font-size="9.5" font-style="italic">Doesn't know WHY — just the WHAT.</text>
+
+    <rect x="88" y="842" width="75" height="16" rx="5" fill="#ef4444" opacity="0.1"/>
+    <text x="125" y="854" text-anchor="middle" fill="#ef4444" font-size="9">No Spawn</text>
+    <rect x="170" y="842" width="75" height="16" rx="5" fill="#6366f1" opacity="0.1"/>
+    <text x="207" y="854" text-anchor="middle" fill="#6366f1" font-size="9">{{LOCAL_MODEL}}</text>
+
+    <!-- Tier 3 label -->
+    <rect x="260" y="708" width="60" height="18" rx="5" fill="#6366f1" opacity="0.1"/>
+    <text x="290" y="721" text-anchor="middle" fill="#6366f1" font-size="9" font-weight="700" letter-spacing="1">TIER 3</text>
+  </g>
+
+  <!-- Scout (researcher) -->
+  <g filter="url(#shadow)">
+    <rect x="360" y="702" width="245" height="170" rx="14" fill="url(#cardBg)" stroke="#14b8a6" stroke-width="2.5" opacity="0.9"/>
+    <polygon points="378,748 396,725 432,725 450,748 432,771 396,771" fill="url(#scoutGrad)" opacity="0.9"/>
+    <text x="414" y="753" text-anchor="middle" fill="#fff" font-size="10" font-weight="700">SCOUT</text>
+    <text x="462" y="740" fill="#14b8a6" font-size="10" font-weight="700" letter-spacing="1">RESEARCHER</text>
+
+    <!-- Cloud badge -->
+    <rect x="462" y="748" width="55" height="18" rx="9" fill="#3b82f6" opacity="0.12"/>
+    <circle cx="474" cy="757" r="4" fill="#60a5fa" opacity="0.8"/>
+    <text x="497" y="761" text-anchor="middle" fill="#60a5fa" font-size="9">Cloud</text>
+
+    <!-- Domain badge -->
+    <rect x="378" y="782" width="115" height="15" rx="5" fill="#14b8a6" opacity="0.08"/>
+    <text x="435" y="793" text-anchor="middle" fill="#14b8a6" font-size="8.5" font-weight="600">WEB READ-ONLY</text>
+
+    <text x="378" y="816" fill="#94a3b8" font-size="10">Search, gather, validate sources.</text>
+    <text x="378" y="830" fill="#94a3b8" font-size="10">Returns findings to caller.</text>
+
+    <rect x="378" y="842" width="75" height="16" rx="5" fill="#ef4444" opacity="0.1"/>
+    <text x="415" y="854" text-anchor="middle" fill="#ef4444" font-size="9">No Spawn</text>
+    <rect x="460" y="842" width="65" height="16" rx="5" fill="#14b8a6" opacity="0.1"/>
+    <text x="492" y="854" text-anchor="middle" fill="#14b8a6" font-size="9">Browser</text>
+  </g>
+
+  <!-- Courier (files / local) -->
+  <g filter="url(#shadow)">
+    <rect x="630" y="702" width="245" height="170" rx="14" fill="url(#cardBg)" stroke="#64748b" stroke-width="2.5" opacity="0.9"/>
+    <polygon points="648,748 666,725 702,725 720,748 702,771 666,771" fill="url(#courierGrad)" opacity="0.9"/>
+    <text x="684" y="753" text-anchor="middle" fill="#fff" font-size="10" font-weight="700">COURIER</text>
+    <text x="733" y="740" fill="#94a3b8" font-size="10" font-weight="700" letter-spacing="1">FILE AGENT</text>
+
+    <!-- Local badge -->
+    <rect x="733" y="748" width="70" height="18" rx="9" fill="#22c55e" opacity="0.12"/>
+    <circle cx="745" cy="757" r="4" fill="#22c55e" opacity="0.8"/>
+    <text x="778" y="761" text-anchor="middle" fill="#22c55e" font-size="9">Local</text>
+
+    <!-- Domain badge -->
+    <rect x="648" y="782" width="105" height="15" rx="5" fill="#64748b" opacity="0.08"/>
+    <text x="700" y="793" text-anchor="middle" fill="#94a3b8" font-size="8.5" font-weight="600">FILE OPS ONLY</text>
+
+    <text x="648" y="816" fill="#94a3b8" font-size="10">Transfers, backups, storage ops.</text>
+    <text x="648" y="830" fill="#94a3b8" font-size="10">No code exec, no web, no email.</text>
+
+    <rect x="648" y="842" width="75" height="16" rx="5" fill="#ef4444" opacity="0.1"/>
+    <text x="685" y="854" text-anchor="middle" fill="#ef4444" font-size="9">No Spawn</text>
+    <rect x="730" y="842" width="60" height="16" rx="5" fill="#64748b" opacity="0.1"/>
+    <text x="760" y="854" text-anchor="middle" fill="#94a3b8" font-size="9">rsync/sftp</text>
+  </g>
+
+  <!-- Sentinel (tester) -->
+  <g filter="url(#shadow)">
+    <rect x="898" y="702" width="245" height="170" rx="14" fill="url(#cardBg)" stroke="#ef4444" stroke-width="2.5" opacity="0.9"/>
+    <polygon points="916,748 934,725 970,725 988,748 970,771 934,771" fill="url(#sentinelGrad)" opacity="0.9"/>
+    <text x="952" y="753" text-anchor="middle" fill="#fff" font-size="10" font-weight="700">SENTINEL</text>
+    <text x="1000" y="740" fill="#ef4444" font-size="10" font-weight="700" letter-spacing="1">TESTER</text>
+
+    <!-- Cloud badge -->
+    <rect x="1000" y="748" width="55" height="18" rx="9" fill="#3b82f6" opacity="0.12"/>
+    <circle cx="1012" cy="757" r="4" fill="#60a5fa" opacity="0.8"/>
+    <text x="1035" y="761" text-anchor="middle" fill="#60a5fa" font-size="9">Cloud</text>
+
+    <!-- Domain badge -->
+    <rect x="916" y="782" width="175" height="15" rx="5" fill="#ef4444" opacity="0.08"/>
+    <text x="1003" y="793" text-anchor="middle" fill="#ef4444" font-size="8.5" font-weight="600">VERIFY ONLY — NO WRITE</text>
+
+    <text x="916" y="816" fill="#94a3b8" font-size="10">Runs tests, validates deployments.</text>
+    <text x="916" y="830" fill="#94a3b8" font-size="10">Forge builds. Sentinel verifies.</text>
+
+    <rect x="916" y="842" width="75" height="16" rx="5" fill="#ef4444" opacity="0.1"/>
+    <text x="953" y="854" text-anchor="middle" fill="#ef4444" font-size="9">No Spawn</text>
+    <rect x="998" y="842" width="80" height="16" rx="5" fill="#ef4444" opacity="0.1"/>
+    <text x="1038" y="854" text-anchor="middle" fill="#ef4444" font-size="9">Read + Test</text>
+  </g>
+
+  <!-- Extensibility placeholder (dashed) -->
+  <rect x="1158" y="476" width="85" height="390" rx="14" fill="none" stroke="#334155" stroke-width="1.5" stroke-dasharray="6,4" opacity="0.6"/>
+  <text x="1200" y="560" text-anchor="middle" fill="#475569" font-size="10" font-weight="600" transform="rotate(-90, 1200, 560)">YOUR SPECIALISTS</text>
+  <text x="1200" y="700" text-anchor="middle" fill="#334155" font-size="8.5" transform="rotate(-90, 1200, 700)">domain-locked agents</text>
 
   <!-- ===== LEGEND ===== -->
-  <rect x="260" y="570" width="290" height="42" rx="6" fill="#fff" stroke="#e2e8f0" stroke-width="1"/>
-  <text x="275" y="584" class="legend-text" style="font-weight:600">Legend:</text>
+  <g>
+    <rect x="60" y="900" width="1140" height="68" rx="10" fill="#141b2d" opacity="0.7"/>
 
-  <!-- Solid line -->
-  <line x1="275" y1="598" x2="300" y2="598" stroke="#334155" stroke-width="1.5"/>
-  <text x="305" y="602" class="legend-text">Spawn / Dispatch</text>
+    <circle cx="94" cy="926" r="6" fill="#22c55e" opacity="0.7"/>
+    <text x="108" y="930" fill="#94a3b8" font-size="11">Local GPU</text>
 
-  <!-- Dashed line -->
-  <line x1="390" y1="598" x2="415" y2="598" stroke="#334155" stroke-width="1.5" stroke-dasharray="6,3"/>
-  <text x="420" y="602" class="legend-text">Notify External</text>
+    <circle cx="200" cy="926" r="6" fill="#3b82f6" opacity="0.7"/>
+    <text x="214" y="930" fill="#94a3b8" font-size="11">Cloud Model</text>
 
-  <!-- Color dots -->
-  <circle cx="282" y="584" r="4" fill="#2563eb"/>
-  <text x="290" y="588" class="legend-text">Governor</text>
-  <circle cx="340" y="584" r="4" fill="#16a34a"/>
-  <text x="348" y="588" class="legend-text">Core</text>
-  <circle cx="380" y="584" r="4" fill="#ea580c"/>
-  <text x="388" y="588" class="legend-text">Tier 2</text>
-  <circle cx="425" y="584" r="4" fill="#6b7280"/>
-  <text x="433" y="588" class="legend-text">Tier 3</text>
+    <line x1="330" y1="926" x2="360" y2="926" stroke="#64748b" stroke-width="2"/>
+    <text x="368" y="930" fill="#94a3b8" font-size="11">Spawn / Delegate</text>
 
-  <!-- Dotted line legend -->
-  <line x1="480" y1="584" x2="505" y2="584" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="2,3"/>
-  <text x="510" y="588" class="legend-text">Extensible</text>
+    <line x1="500" y1="926" x2="530" y2="926" stroke="#10b981" stroke-width="2" stroke-dasharray="3,3"/>
+    <text x="538" y="930" fill="#94a3b8" font-size="11">Escalate (sessions_spawn)</text>
+
+    <line x1="710" y1="926" x2="740" y2="926" stroke="#0ea5e9" stroke-width="2" stroke-dasharray="6,3"/>
+    <text x="748" y="930" fill="#94a3b8" font-size="11">SSH (Governor)</text>
+
+    <rect x="88" y="944" width="100" height="16" rx="5" fill="#ef4444" opacity="0.1"/>
+    <text x="138" y="956" text-anchor="middle" fill="#ef4444" font-size="10">No Spawn = worker</text>
+
+    <text x="640" y="956" text-anchor="middle" fill="#334155" font-size="10">8 Domain-Locked Agents  ·  Local + Cloud Inference  ·  Security by Isolation</text>
+
+    <rect x="860" y="944" width="86" height="16" rx="5" fill="#22c55e" opacity="0.08"/>
+    <text x="903" y="956" text-anchor="middle" fill="#22c55e" font-size="10">Local = air-gapped</text>
+
+    <rect x="958" y="944" width="70" height="16" rx="5" fill="#10b981" opacity="0.08"/>
+    <text x="993" y="956" text-anchor="middle" fill="#10b981" font-size="10">Forge ≠ Sentinel</text>
+  </g>
 </svg>

@@ -1,174 +1,185 @@
-# OpenClaw Governor -- Best Practices Guide
+# Best Practices — OpenClaw Governor Template
 
-> A practical reference for operating AI agent infrastructure with the Governor pattern.
-> Designed to accompany the [OpenClaw Governor Template](https://github.com/{{GITHUB_USER}}/OpenClawGovernor).
+This document synthesizes operational knowledge across all components of the OpenClaw Governor pattern. It is not a tutorial — it is a reference for teams who want to run this architecture correctly and safely from day one.
 
 ---
 
 ## 1. The Governor Pattern
 
-The Governor pattern separates oversight from execution. Your Mac or laptop runs Claude Code as the "Governor" -- it monitors, verifies, and unblocks, but never builds application code itself. The actual work happens on a Linux server where OpenClaw agents build, deploy, and maintain your infrastructure.
+**Why run Claude Code separately from your OpenClaw agents?**
 
-**Why separate machines?** Three reasons. First, isolation: if an agent misbehaves on the Linux box, your personal machine is untouched. Second, clean context: the Governor's repo contains only specs, audit logs, and operational state, keeping its context window focused on oversight rather than drowning in application code. Third, auditability: every interaction between the Governor and the target machine flows through SSH, creating a natural audit boundary.
+The Governor (Claude Code, or any AI coding agent, running on a separate machine — local, remote, wherever you can SSH from) and your OpenClaw agents are deliberately different layers with different roles. Claude Code is the primary recommendation, but Codex, Antigravity, and others work too. Conflating the Governor with the agents it governs is the most common architectural mistake.
 
-The Governor's core responsibilities are:
+OpenClaw agents live on the target machine and execute work continuously — they spawn sessions, process tasks, run code, manage files. The Governor sits above and outside this — it monitors, verifies, improves, and can also directly build on the OpenClaw system when needed. As the highest-capability model with the least context rot, the Governor can do project work too. The key is maintaining separation: the Governor knows it's working on OpenClaw (remote) vs its own local repo, and keeps those contexts distinct.
 
-- **Monitor**: Check agent health, review logs, verify outputs match specs.
-- **Verify**: Don't trust status codes -- read actual output, compare against expected behavior.
-- **Unblock**: When an agent is stuck (missing dependency, needs sudo, unclear requirement), the Governor resolves the blocker or escalates to the human.
+This separation provides:
+- **Independent oversight.** A Governor agent cannot be co-opted by a confused sub-agent to approve its own work.
+- **Meta-level control.** When something systemic breaks (wrong model configured, agent tool permissions malformed), only an outside observer can see the pattern.
+- **Upgrade path.** You can swap, retrain, or reset individual agents without taking down the oversight layer.
 
-Think of it like a site reliability engineer who watches dashboards and responds to incidents but doesn't write application features. The Governor ensures the system runs correctly; the agents do the actual building.
-
-A common mistake is letting the Governor start writing application code. Resist this. The moment your Governor is authoring React components or Dockerfiles, you've lost the separation that makes this pattern valuable. If you catch yourself doing this, stop -- SSH into the target, delegate the work to an agent, and go back to oversight.
-
----
-
-## 2. Setting Up Your Agent Hierarchy
-
-**Start small.** The most common failure mode is launching with seven agents when you need two. Begin with `ops-commander` (Tier 1 orchestrator) and one worker, such as `gpu-runner`. Add agents only when you have a concrete, recurring need that the existing agents cannot cover efficiently.
-
-**Tier rules govern dispatch authority:**
-
-| From | Can dispatch to | Cannot dispatch to |
-|------|----------------|-------------------|
-| Tier 1 (ops-commander) | Tier 2 and Tier 3 | -- |
-| Tier 2 (sec-sentinel, deploy-chief, alert-relay) | Tier 3 only | Tier 1, other Tier 2 |
-| Tier 3 (gpu-runner, web-scout, log-parser) | Nobody | Any higher tier |
-
-This hierarchy prevents circular dependencies and ensures clear accountability. If `web-scout` discovers a critical CVE, it reports up to `ops-commander`, which then dispatches `sec-sentinel` to audit. Workers never give orders to directors.
-
-**Tool allocation** follows the principle of least privilege. Each agent should have access to only the tools it needs. `gpu-runner` needs access to the inference server and model directory -- it does not need SSH keys or the ability to modify firewall rules. `sec-sentinel` needs read access to system configs and audit logs but should not be deploying containers. Define tool access in each agent's configuration and resist the temptation to give everyone admin-level access "for convenience."
-
-**Model selection** depends on the task. Cloud models (Claude, GPT) excel at reasoning, planning, and complex analysis -- use them for orchestrators, security auditors, and anything requiring nuanced judgment. Local models (Llama, Qwen via LM Studio or Ollama) are ideal for high-frequency, lower-complexity tasks like log parsing, inference serving, and research summarization. The cost savings of running Tier 3 workers on local models are significant when those tasks run continuously.
-
-Configure heartbeats for every agent. A simple "I'm alive" signal every 60 seconds lets `ops-commander` detect failures within two minutes. Without heartbeats, you discover a dead agent only when its work stops appearing -- which could be hours later.
+In practice: the Governor writes rules into `CLAUDE.md`, updates workspace files, and can SSH into the machine to check logs or restart services. It never touches application code or data directly. Every correction the Governor makes becomes a permanent rule — the system gets smarter each time it fails.
 
 ---
 
-## 3. Spec-First Development
+## 2. Spec-First Development
 
-Every non-trivial change should start with a spec, not code. This is the single practice that most dramatically improves agent output quality.
+**The Governor writes the spec. You describe what you want.**
 
-**Why specs first?** Agents are excellent executors but mediocre requirement-gatherers. When you hand an agent a vague request like "set up monitoring," you get whatever the model's training data considers default monitoring. When you hand it a spec that says "install Prometheus on port 9090, scrape these 4 endpoints at 15s intervals, alert via Telegram when CPU exceeds 85% for 5 minutes," you get exactly what you need.
+The most reliable agents don't improvise — they follow a well-specified brief. But you never write that brief yourself. Tell the Governor what you want — "I need email triage" or "set up a weather alert agent" — and it creates the spec, dispatches the right agents, and tracks progress. The spec lands in `specs/` and covers: problem statement, goals, design, acceptance criteria, and rollback.
 
-**Using the template**: The repo includes `specs/_TEMPLATE_spec.md`. Copy it for each new feature or change. The template captures the problem, proposed solution, acceptance criteria, and affected systems. The critical section is acceptance criteria -- these are the conditions the Governor checks to verify the work is done correctly.
+This eliminates the largest class of rework: agents that implement the wrong thing correctly. The Governor is precise so compute isn't wasted. You do the thinking; the robots do the documentation and the work.
 
-**The workflow in Claude Code:**
+Key rules from operational experience:
+- **Acceptance criteria must be verifiable.** Not "it works" but "the test passes" or "the endpoint returns 200 with this JSON structure."
+- **Include rollback steps.** Every spec that touches infrastructure or configuration needs a clear undo path. Agents make mistakes — having a rollback documented before starting means recovery is a 30-second command, not a debugging session.
+- **Mark spec status.** `draft → approved → active → done`. Agents shouldn't start work on a draft spec. The PM agent's heartbeat scans `active` specs for progress.
 
-1. Identify the need (from monitoring, user request, or incident).
-2. Copy the spec template: `cp specs/_TEMPLATE_spec.md specs/NNN_feature_name.md`
-3. Fill in the spec with concrete details, constraints, and acceptance criteria.
-4. Hand the spec to the appropriate agent via `ops-commander`.
-5. The agent executes against the spec.
-6. The Governor verifies each acceptance criterion.
-
-**When to skip specs**: Simple, obvious fixes that take less than five minutes and have no architectural impact. Restarting a crashed service, fixing a typo in a config, updating a package version. If you're asking "should I write a spec for this?" the answer is usually yes -- the question itself suggests enough complexity to warrant one.
-
-Specs also create an invaluable audit trail. Six months from now, when you're wondering why the firewall rules look the way they do, you can trace back to `spec_042_firewall_hardening.md` and see the reasoning, constraints, and approval history. This institutional memory is priceless.
+Use the `_TEMPLATE_spec.md` as a starting point. Resist the temptation to fill it out partially — an incomplete spec is worse than no spec because it creates false confidence.
 
 ---
 
-## 4. Security Workflows
+## 3. Agent Hierarchy Design
 
-Security is not a one-time setup -- it's a continuous practice. The Governor template includes workflows for ongoing security management.
+**The shape of your agent fleet is a security decision, not an efficiency one.**
 
-**Initial baseline audit**: When you first deploy the Governor to a new target machine, run a full security audit. This is `sec-sentinel`'s first job. It should check: open ports, running services, firewall rules, SSH configuration (key-only auth, no root login), user permissions, installed packages with known CVEs, file permissions on sensitive directories, and cron jobs. The output becomes your baseline in `audit_logs/`.
+The three-tier hierarchy (Governor → Orchestrator → Directors → Workers) is not cosmetic. Each boundary prevents a specific failure mode:
 
-**Ongoing security checks** should run on a weekly cadence at minimum. Configure a recurring task where `sec-sentinel` performs a focused scan. Each week, rotate through these areas:
+- **Orchestrator can't execute.** Atlas sees everything and talks to the user, but has no code execution, no email access, no file write to production. A compromised or confused orchestrator cannot cause real damage.
+- **Directors own one domain.** Forge owns code. Hermes owns email. Conductor owns project state. None of them can accidentally (or deliberately) cross boundaries because the tools aren't there.
+- **Workers don't know why.** Bolt and Courier receive tasks, execute, return results. No context about the broader goal means no drift, no assumptions, no intent leakage. The agent that processes your credentials doesn't know it's processing credentials.
 
-- Week 1: Package CVE scan (check installed packages against vulnerability databases)
-- Week 2: Access control review (who has sudo, SSH keys, service accounts)
-- Week 3: Network exposure scan (open ports, listening services, firewall rules)
-- Week 4: Log review (auth failures, unusual patterns, privilege escalations)
+**Escalation chain:**
+```
+Workers → escalate to → Directors
+Directors → escalate to → Atlas (Orchestrator)
+Atlas → notifies → User (via Notification Channel)
+```
 
-**Incident response** follows the workflow in `.agent/workflows/incident_response.md`. The key principle: contain first, investigate second, remediate third. When `sec-sentinel` or `log-parser` detects something suspicious, the immediate action is containment (block the IP, disable the account, stop the service), not investigation. You can investigate at leisure once the threat is contained.
+`sessions_spawn` is the mechanism. Workers cannot spawn — they can only return results within their session. Directors can spawn workers. Only Atlas can send to the notification channel (Telegram, Slack, Discord, etc.).
 
-**Patch management** should be systematic, not reactive. Use the workflow in `.agent/workflows/patch_management.md`. `web-scout` monitors for new CVEs relevant to your stack. When a critical patch drops, `sec-sentinel` assesses impact, `deploy-chief` plans the rollout, and `ops-commander` coordinates the execution. Test on a staging environment if possible; roll back immediately if anything breaks.
-
-**Access control hardening** is often overlooked after initial setup. Review quarterly: remove unused SSH keys, rotate service account credentials, audit sudo access, check for world-readable files containing secrets. Every access point is a potential attack surface.
-
----
-
-## 5. Self-Correcting Agent Memory
-
-The most powerful feature of this template is the self-correction loop. Every mistake the system makes becomes a permanent rule that prevents repetition.
-
-**The CLAUDE.md lessons table** is the primary mechanism. When the Governor or any agent makes an error -- misreads a log, uses the wrong command, forgets a step -- add a row to the lessons table immediately. The format is simple:
-
-| # | Date | Lesson | Rule |
-|---|------|--------|------|
-| 1 | 2025-01-15 | Forgot to check disk space before large download | Always verify 2x required disk space before any download operation |
-
-The "Rule" column is critical. It's not a description of what went wrong -- it's an imperative instruction that prevents recurrence. Write it as a command the agent must follow. Claude reads CLAUDE.md at the start of every session, so these rules accumulate into an increasingly robust operating manual.
-
-**`active_state.md`** serves as working memory. It tracks what the Governor is currently doing, what tasks are assigned to which agents, and what's pending verification. Think of it as the Governor's scratchpad. It should be updated frequently and reviewed at the start of every session to resume context.
-
-**`failures.md`** is institutional memory for larger incidents. When something goes seriously wrong -- a service outage, a security incident, a botched deployment -- write a post-mortem in `failures.md`. Include what happened, why it happened, what the impact was, and what permanent changes were made to prevent recurrence. This file becomes increasingly valuable over time as it captures hard-won operational knowledge.
-
-The compounding effect is remarkable. After a few weeks, your CLAUDE.md might have 20-30 lessons. After a few months, it has 100+. Each one represents a mistake that will never happen again. The system literally gets better every time it fails. No human team achieves this level of consistent learning because humans forget -- these rules persist.
+The Governor builds and deploys agents on demand. Tell it what you need — "I need an agent for weather alerts" — and it creates the agent with appropriate tools, workspace files, and domain isolation. Scale up freely. More agents with narrow domains is better than fewer agents with broad scope. There is no reason to be conservative — the architecture handles the safety, not the headcount.
 
 ---
 
-## 6. Escalation Protocols
+## 4. Self-Correcting Memory
 
-Well-designed escalation prevents both dangerous autonomous action and unnecessary human interruption.
+**Every mistake becomes a rule. The system gets smarter each time it fails.**
 
-**Design your escalation chain** explicitly. Not every issue needs to reach the human operator. A crashed service that can be safely restarted? `ops-commander` handles it. A security alert that might be a false positive? `sec-sentinel` investigates and reports findings to `ops-commander`. A failed deployment that requires rollback? `deploy-chief` rolls back and notifies. Only genuinely ambiguous situations, destructive actions, or novel problems should reach the human.
+The lessons table in `CLAUDE.md` (and each agent's workspace `IDENTITY.md`) is not a changelog — it's a living rulebook. The discipline: after any correction from a user, the Governor writes a new row into the lessons table before the session ends.
 
-**When agents should escalate vs. act autonomously:**
+Format:
+```
+| Date | What went wrong | Rule |
+```
 
-| Situation | Action |
-|-----------|--------|
-| Service crashed, known restart procedure | Act autonomously, log the event |
-| Disk space low, safe cleanup targets exist | Act autonomously, notify after |
-| Unknown process consuming resources | Escalate -- could be legitimate or malicious |
-| Security alert from monitoring | Contain autonomously, escalate for investigation |
-| Needs sudo for a new operation | Escalate -- never assume sudo authority |
-| Spec is ambiguous or contradictory | Escalate -- don't guess at requirements |
+The rule must be concrete and actionable. "Be more careful" is not a rule. "Before any destructive file operation, verify the replacement exists and matches expected size — exit code 0 is not sufficient confirmation" is a rule.
 
-**Notification channel discipline**: Only `ops-commander` and `alert-relay` should communicate with the human operator. If `log-parser` detects an anomaly, it reports to `ops-commander`, which decides whether the human needs to know. This prevents notification fatigue. If every agent can ping your Telegram, you'll quickly start ignoring all messages -- including critical ones.
+At session start, the Governor reviews lessons relevant to the current context. Agents doing file operations see the file safety rules. Agents doing config changes see the config verification rules. This is how institutional knowledge accumulates without requiring a human to remember it.
 
-**Approval-gated operations** are any actions that are destructive, irreversible, or require elevated privileges. Deleting data, modifying firewall rules, updating DNS records, running commands as root -- these all require explicit human approval. The agent should present the exact command it wants to run, explain why, and wait for a "yes" before proceeding. Never batch approval-gated operations; each one gets individual review.
+Keep the table trimmed. Rules that have been stable for 6+ months without incident can be promoted to formal policy in the relevant spec or workflow document and removed from the active table.
 
 ---
 
-## 7. Monitoring & Recovery
+## 5. Workspace Files
 
-Monitoring is your early warning system. Without it, you discover problems from users complaining, not from your agents catching issues proactively.
+**Every agent has a workspace directory with standardised files. Do not skip this.**
 
-**Health check patterns:**
+Each agent's `agentDir` contains files that define who the agent is, what tools it has, what it's currently doing, and what it has learned. These are not optional decoration — they are the agent's persistent identity and memory.
 
-- **Heartbeat**: Each agent sends a periodic "alive" signal. If two consecutive heartbeats are missed, `ops-commander` investigates. This catches agent crashes and hangs.
-- **Watchdog**: A lightweight process monitors the inference server (LM Studio, Ollama, vLLM). If the server becomes unresponsive, the watchdog restarts it and notifies `ops-commander`.
-- **Probe**: Active checks that verify functionality, not just availability. Don't just check that port 1234 is open -- send a test inference request and verify the response is coherent. A service can be "up" but functionally broken.
+| File | Purpose |
+|------|---------|
+| `IDENTITY.md` | Who the agent is, its domain, its security rules. Loaded at session start. |
+| `TOOLS.md` | What tools are available and how to use them. Prevents tool hallucination. |
+| `TASKS.md` | Current task queue. Checked by Conductor on heartbeat. |
+| `HEARTBEAT.md` | Instructions for what to do on each heartbeat cycle. |
+| `OPS.md` | Operational reference — paths, commands, known issues for this agent's domain. |
+| `KNOWN_ISSUES.md` | (Optional) Domain-specific problems and workarounds. |
 
-**Multi-layer monitoring** catches different classes of failure:
+`IDENTITY.md` is the most important. It must state clearly: what this agent does, what it does NOT do, and its security domain. An agent without a clear IDENTITY.md will drift — responding to whatever prompt arrives instead of staying within its role.
 
-1. **Infrastructure**: CPU, memory, disk, GPU utilization, temperatures
-2. **Service**: Is the inference server responding? Is the gateway routing correctly?
-3. **Application**: Are agent outputs meeting quality thresholds? Are tasks completing in expected timeframes?
-4. **Security**: Auth failures, unusual network traffic, file integrity changes
+`TOOLS.md` prevents a common failure: agents attempting to use tools that don't exist in their runtime. Document every tool with its actual syntax, not what you hope the syntax is. Test once and write down the working invocation.
 
-**Machine recovery runbook**: Document your recovery procedure for total machine failure. What's the boot order? Which services need to start first? Where are the backups? How long does full recovery take? Write this down before you need it. When your server is down at 2 AM, you want a checklist, not a puzzle.
+---
 
-**Graceful degradation**: Design your system to function with reduced capability rather than failing completely. If the GPU goes down, can agents fall back to CPU inference with a smaller model? If the internet drops, can local agents continue operating? If `sec-sentinel` crashes, does `ops-commander` take over basic security checks? Plan for partial failures because they're far more common than total failures.
+## 6. Security Approach
+
+**Architecture is the guardrail, not permissions.**
+
+The security model here is not about locking agents down or requiring approval gates. Agents have wide-open access within their tier — that's what makes them useful. The safety comes from the structure itself: even with full sudo, no single agent has both the full picture and the full toolkit. That combination is what makes an agent dangerous, and the tiered architecture structurally prevents it.
+
+**Four architectural properties that provide security without friction:**
+
+1. **Forge builds, Sentinel verifies.** The agent that writes the code is never the agent that approves it. This catches both bugs and scope creep — structurally, not by policy.
+2. **Local models for data touchpoints.** Any agent that handles credentials, personal data, security configs, or sensitive files runs on a local model (Bolt, Courier). Cloud APIs never see that data. This is both a security property and a cost optimisation — cheap local inference for execution tasks, expensive cloud reasoning only when it's needed.
+3. **Workers have no outbound channel.** Bolt and Courier cannot send messages, spawn sessions, or make network calls beyond their narrow tool set. They execute within their session and return results. Containment is structural, not policy.
+4. **Push sensitive access down to lower tiers.** Workers on local models handle credentials and sensitive data. Cloud-facing agents never see it. The architecture enforces this structurally — there are no approval gates to configure or bypass.
+
+The architecture is deliberately light on deny lists. Deny lists need maintenance. Structure-based isolation doesn't.
+
+---
+
+## 7. Monitoring and Recovery
+
+**A four-layer system that catches failures before users notice them.**
+
+**Layer 1 — Heartbeats.** Each agent with a heartbeat runs its `HEARTBEAT.md` routine on a schedule. Conductor scans project states every 60 minutes. Atlas synthesises and notifies the user when something needs attention. Heartbeats are not just "I'm alive" pings — they are active work cycles that check for drift, stalled tasks, and blocked agents.
+
+**Layer 2 — Watchdog.** A systemd timer (every 5 minutes) hits the Openclaw gateway health endpoint. If the gateway is not responding, it attempts a restart and notifies the user via the notification channel. The Openclaw service itself runs with `Restart=always` — transient crashes self-recover within seconds.
+
+**Layer 3 — Governor.** The Governor (Claude Code) does periodic SSH checks — reading agent `TASKS.md` files, checking gateway logs, reviewing recent escalations. This is the architectural-level sanity check that catches systemic problems the watchdog misses — pattern recognition across the whole fleet, not just individual service health.
+
+**Layer 4 — Audit logs.** Every agent action that touches the system goes through auditd logging under the agent's user account. Weekly security checks (cron or Governor-initiated) review these logs for anomalies — unexpected sudo use, unusual file access patterns, out-of-hours activity.
+
+**Recovery procedure for a stuck agent:**
+
+The Governor handles this automatically. When an agent gets stuck, the Governor SSHes in, reads the agent's `TASKS.md` and recent session logs, identifies whether it's blocked, errored, or drifted, and fixes it. You get a notification when it's resolved. If the Governor itself needs a decision from you — a missing credential, an architectural choice — it escalates via the notification channel. Otherwise it handles recovery end-to-end without involving you.
 
 ---
 
 ## 8. Operational Tips
 
-These are lessons from running the Governor pattern in production:
+**Hard-won lessons from running this architecture in production.**
 
-**Keep the Governor repo clean.** This repo should contain specs, audit logs, agent configs, and operational memory. It should not contain application code, container images, or large data files. If you find yourself committing Python scripts or Dockerfiles here, you're violating the separation of concerns. Application code belongs on the target machine, in the agents' workspaces.
+**Restart the gateway after every config change.** This cannot be overstated. Openclaw's `openclaw.json` changes take effect only after a gateway restart. A common failure pattern: change the config, see the change looks correct in the file, assume it's live. It's not. `systemctl --user restart openclaw-gateway.service`, then verify the change is active by checking agent behaviour.
 
-**Domain knowledge belongs in the agent that owns it.** `sec-sentinel` should know about CVE databases and hardening techniques. `deploy-chief` should know about your CI/CD pipeline and rollback procedures. Don't centralize all knowledge in `ops-commander` -- that creates a bottleneck and bloats its context window. Each agent should be an expert in its domain.
+**Validate your config before restart.** Openclaw will fail to start with invalid JSON. Run a JSON lint pass on `openclaw.json` before every restart. Keep a known-good backup of the config before making any changes.
 
-**Verify output, not just status codes.** "Exit code 0" doesn't mean the operation succeeded correctly. A deployment script can exit cleanly while deploying the wrong version. A security scan can complete without actually scanning everything. Read the actual output. Compare it against expected behavior. This is the Governor's primary responsibility.
+**Known invalid tools.** Some tools appear valid in Openclaw documentation but are not available in the agent runtime (`glob`, `grep`). If an agent logs tool warnings on startup, remove those tools from its config. Don't ignore the warnings — they indicate the agent will attempt and fail to use those tools.
 
-**When in doubt, re-plan.** If execution is going sideways -- tests are failing unexpectedly, outputs look wrong, the approach feels hacky -- stop and re-plan. The cost of re-planning is minutes. The cost of pushing through a bad plan is hours of debugging and cleanup. Enter plan mode in Claude Code, reassess the situation, and chart a new course.
+**Test escalations end-to-end.** After the Governor deploys a new agent, it runs a test escalation: trigger the agent, verify it completes its task, verify it reports back through the correct chain, verify the notification reaches you. The Governor doesn't declare an agent operational until the full message path has been verified in practice.
 
-**Don't over-architect.** Three well-configured agents covering your actual needs beats ten agents where half are idle and the other half are stepping on each other. Every agent adds coordination overhead. Start with the minimum viable hierarchy (orchestrator + 1-2 workers), operate it for a week, and add agents only when you identify concrete gaps. The goal is effective infrastructure management, not an impressive org chart.
+**Use SSH aliases.** Your Tailscale and LAN IPs go in `~/.ssh/config` with meaningful aliases (`ssh {{HOSTNAME}}`, `ssh {{HOSTNAME}}-lan`). Agents that need to SSH to other machines (Courier moving files to NAS, Governor checking agent state) should use these aliases, not raw IPs. IP-based configs break when network topology changes; alias-based configs don't.
 
-**Rotate your attention.** It's easy to focus on the exciting parts (new features, new agents) and neglect the mundane but critical parts (log review, backup verification, access audits). Set a weekly cadence where you review each operational area, even if just for five minutes. The vulnerabilities you catch during routine review are the ones that would have become incidents.
+**One notification channel.** Only Atlas sends to the user's notification channel. If you find yourself configuring a second agent to send directly, stop. Create an escalation path to Atlas instead. Multiple agents with direct notification access creates noise and breaks the coherent user experience the orchestrator pattern is designed to provide.
 
-**Document decisions, not just actions.** When you make a non-obvious choice (using port 18789 instead of 8080, choosing Tailscale over WireGuard, running two inference servers instead of one), write down why. Future-you will thank present-you when revisiting these decisions months later.
+---
+
+## 9. Local Model Recommendations
+
+Local models handle secure data touchpoints — credentials, configs, sensitive files, air-gapped compute — AND save cloud API costs on simple execution tasks that don't need expensive reasoning models. Cloud APIs never see sensitive data, and you're not paying cloud rates for work a local model handles fine. The right local model depends on your hardware.
+
+**Recommended Model Families:**
+
+- **Qwen 3.5** — Best size-to-capability ratio for general agentic work. MoE variants (35B-A3B) activate only 3B parameters per token — fast enough for interactive use on modest VRAM. Strong tool use and function calling.
+- **MiniMax M1** — 456B total / 46B active MoE, 1M context window. Excellent for agentic tasks that require holding large codebases or document sets in context. Cloud-class reasoning locally.
+- **Nemotron Super 120B** — 120B total / 12B active hybrid Mamba-MoE. 1M context. Built specifically for agent pipelines by NVIDIA. Excellent instruction following and tool use discipline.
+
+**VRAM Guide:**
+
+| VRAM | Hardware | Recommended | Quantization |
+|------|----------|-------------|-------------|
+| 8–16 GB | Mac Mini, RTX 4060/4080 | Qwen 3.5 9B | Q4–Q8 |
+| 24 GB | RTX 4090 | Qwen 3.5 35B-A3B (3B active) | Q4_K_M |
+| 32 GB | RTX 5090, Mac M4 Max | Qwen 3.5 35B-A3B | Q6–Q8 |
+| 48–64 GB | Mac M4 Ultra, 2x GPU | Nemotron Super 120B-A12B | Q4_K_M |
+| 96 GB+ | DGX Spark, multi-GPU | Nemotron Super 120B (Q6+), MiniMax M1 (Q3–Q4) | High quality |
+
+All three families support tool use and function calling. MoE models (A3B, A12B) only activate a fraction of parameters per token — they are much faster than their total parameter count suggests. A 35B-A3B model with 3B active parameters runs at 3B inference speed while retaining 35B knowledge capacity.
+
+**Quantization quick reference:**
+- **Q4** — 4-bit, smallest file, slight quality loss. Good for VRAM-constrained setups.
+- **Q6** — 6-bit, good balance of size and quality. Default recommendation.
+- **Q8** — 8-bit, near full quality, larger file. Use when you have headroom.
+- **FP16** — Full precision. Only if VRAM is abundant.
+
+Use LM Studio or Ollama as your local inference server. Both expose an OpenAI-compatible API. The Governor configures your local model provider automatically — you never touch `openclaw.json` directly.

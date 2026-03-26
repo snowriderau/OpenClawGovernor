@@ -1,12 +1,12 @@
 ---
 name: openclaw-config
-description: Reference guide for configuring OpenClaw agents, models, providers, and workspace files. Auto-loads when tasks involve OpenClaw setup, agent configuration, model routing, or openclaw.json changes.
+description: Reference guide for configuring Openclaw agents, models, providers, and workspace files. Auto-loads when tasks involve Openclaw setup, agent configuration, model routing, or openclaw.json changes.
 user-invocable: false
 ---
 
-# OpenClaw Configuration Guide
+# Openclaw Configuration Guide
 
-**Read this before touching `~/.openclaw/openclaw.json` directly.** OpenClaw has CLI commands for most config operations — prefer them over raw JSON edits.
+**The Governor loads this before any Openclaw config operation.** Openclaw has CLI commands for most config operations — prefer them over raw JSON edits. OpenClaw agents can also self-configure, but the Governor is recommended for config management due to its oversight perspective and separation of concerns.
 
 ## Key Paths
 
@@ -19,7 +19,7 @@ user-invocable: false
 | Memory | `~/.openclaw/memory/` (SQLite) |
 | Binary | `~/.npm-global/bin/openclaw` |
 | Gateway service | `~/.config/systemd/user/openclaw-gateway.service` |
-| Gateway port | `{{GATEWAY_PORT}}` (loopback) |
+| Gateway port | `18789` (loopback) |
 | Docs | https://docs.openclaw.ai/cli |
 
 ## CLI First — Don't Raw-Edit When You Can CLI
@@ -63,7 +63,7 @@ openclaw agents set-identity --agent <id>  # interactive
 
 # Route channels to agents
 openclaw agents bind --agent <id> --bind telegram
-openclaw agents bind --agent <id> --bind telegram:<chat-id>
+openclaw agents bind --agent <id> --bind telegram:{{TELEGRAM_USER_ID}}
 openclaw agents unbind --agent <id> --bind telegram
 
 # Delete an agent
@@ -78,7 +78,7 @@ openclaw config get agents.defaults.model.primary
 openclaw config get agents.defaults.heartbeat
 
 # Set any config value (JSON5 or raw string)
-openclaw config set agents.defaults.model.primary "<provider>/<model-id>"
+openclaw config set agents.defaults.model.primary "opencode/nemotron-3-super-free"
 openclaw config set agents.defaults.heartbeat.every "30m"
 
 # Remove a config value
@@ -113,7 +113,7 @@ openclaw logs
 openclaw agent --agent main --message "test" --json
 
 # Send a message via channel
-openclaw message send --channel telegram --target <chat-id> --message "hi"
+openclaw message send --channel telegram --target {{TELEGRAM_USER_ID}} --message "hi"
 ```
 
 ## Config Structure (openclaw.json)
@@ -127,8 +127,8 @@ When you DO need to edit JSON directly, here's the structure:
   "mode": "merge",
   "providers": {
     "<provider-name>": {
-      "baseUrl": "http://<host>:<port>/v1",
-      "apiKey": "<api-key-or-placeholder>",
+      "baseUrl": "http://...",
+      "apiKey": "...",
       "api": "openai-responses",
       "models": [
         {
@@ -147,7 +147,7 @@ When you DO need to edit JSON directly, here's the structure:
 ```
 
 - `mode: "merge"` means custom providers merge with built-in ones
-- Provider name becomes the prefix: `<provider-name>/<model-id>`
+- Provider name becomes the prefix: `lmstudio/qwen3.5-35b-a3b`
 - `api` can be `"openai-responses"` for OpenAI-compatible endpoints
 - Models with `cost: 0` are free/local
 
@@ -155,15 +155,15 @@ When you DO need to edit JSON directly, here's the structure:
 
 ```json
 {
-  "id": "{{AGENT_WORKER}}",
-  "workspace": "/home/{{USERNAME}}/.openclaw/workspace/workspaces/{{AGENT_WORKER}}",
-  "model": "<provider>/<model-id>",
+  "id": "worker",
+  "workspace": "/home/{{USERNAME}}/.openclaw/workspace/workspaces/worker",
+  "model": "lmstudio/{{LOCAL_MODEL}}",
   "tools": {
     "profile": "coding",
     "alsoAllow": ["message", "web_search", "web_fetch", "read", "write", "edit", "process", "session_status"]
   },
   "subagents": {
-    "allowAgents": ["{{AGENT_WORKER}}"]
+    "allowAgents": ["worker"]
   }
 }
 ```
@@ -180,14 +180,15 @@ When you DO need to edit JSON directly, here's the structure:
 "agents": {
   "defaults": {
     "model": {
-      "primary": "<provider>/<primary-model-id>",
+      "primary": "{{PRIMARY_MODEL}}",
       "fallbacks": [
-        "<provider>/<fallback-model-1>",
-        "<provider>/<fallback-model-2>"
+        "opencode/nemotron-3-super-free",
+        "lmstudio/{{LOCAL_MODEL}}"
       ]
     },
     "models": {
-      "<provider>/<model-id>": { "alias": "<short-name>" }
+      "lmstudio/{{LOCAL_MODEL}}": { "alias": "local" },
+      "opencode/nemotron-3-super-free": { "alias": "nemotron" }
     }
   }
 }
@@ -197,13 +198,13 @@ When you DO need to edit JSON directly, here's the structure:
 - `fallbacks` — tried in order if primary fails
 - `models` — per-model config; `alias` gives it a shorthand name
 
-### Heartbeat (under agent-specific config, NOT defaults)
+### Heartbeat (under `agents.defaults.heartbeat`)
 
 ```json
 "heartbeat": {
   "every": "30m",
-  "target": "<channel-type>",
-  "to": "<channel-chat-id>",
+  "target": "telegram",
+  "to": "{{TELEGRAM_USER_ID}}",
   "directPolicy": "allow",
   "suppressToolErrorWarnings": true
 }
@@ -211,7 +212,6 @@ When you DO need to edit JSON directly, here's the structure:
 
 - `target` must be set explicitly — defaults to `"none"` (goes nowhere)
 - `to` is the chat/channel ID for delivery
-- Place on specific `agents.list[]` entries, NOT in `agents.defaults`
 
 ### Workspace Files (in agent workspace dir)
 
@@ -225,21 +225,19 @@ When you DO need to edit JSON directly, here's the structure:
 | `TASKS.md` | Current task queue for the agent |
 | `OPS.md` | Operational procedures |
 
-## Adding a Provider (Template)
+## Provider Examples
 
-To add a new model provider, insert a block under `models.providers` in `openclaw.json`:
+### LM Studio (local GPU — OpenAI-compatible API)
 
-### Local Inference Server (e.g., LM Studio, Ollama, vLLM)
 ```json
-"local-inference": {
+"lmstudio": {
   "baseUrl": "http://127.0.0.1:{{INFERENCE_PORT}}/v1",
-  "apiKey": "local",
+  "apiKey": "lmstudio",
   "api": "openai-responses",
   "models": [
     {
-      "id": "your-model-name",
-      "name": "Your Model Display Name",
-      "reasoning": true,
+      "id": "{{LOCAL_MODEL}}",
+      "name": "Local Model (LM Studio)",
       "input": ["text"],
       "cost": { "input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0 },
       "contextWindow": 131072,
@@ -249,41 +247,147 @@ To add a new model provider, insert a block under `models.providers` in `opencla
 }
 ```
 
-### Cloud Provider (e.g., OpenRouter, Together, Groq)
+- Default LM Studio port is `1234`
+- `apiKey` is a dummy string — LM Studio doesn't enforce auth
+- Use this when LM Studio is running on the **same machine** (loopback)
+- For remote access over Tailscale: replace `127.0.0.1` with `{{TAILSCALE_IP}}`
+
+### Ollama (local — OpenAI-compatible API)
+
 ```json
-"cloud-provider": {
-  "baseUrl": "https://api.provider.com/v1",
-  "apiKey": "your-api-key-here",
+"ollama": {
+  "baseUrl": "http://127.0.0.1:11434/v1",
+  "apiKey": "ollama",
   "api": "openai-responses",
   "models": [
     {
-      "id": "provider-model-id",
-      "name": "Model Display Name",
-      "reasoning": true,
-      "input": ["text", "image"],
-      "cost": { "input": 0.5, "output": 1.5, "cacheRead": 0.25, "cacheWrite": 0.5 },
+      "id": "{{LOCAL_MODEL}}",
+      "name": "Local Model (Ollama)",
+      "input": ["text"],
+      "cost": { "input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0 },
       "contextWindow": 131072,
+      "maxTokens": 32768
+    }
+  ]
+}
+```
+
+- Default Ollama port is `11434`
+- Model IDs must match exactly what `ollama list` returns
+
+### vLLM (local or server — OpenAI-compatible API)
+
+```json
+"vllm": {
+  "baseUrl": "http://127.0.0.1:{{INFERENCE_PORT}}/v1",
+  "apiKey": "EMPTY",
+  "api": "openai-responses",
+  "models": [
+    {
+      "id": "{{LOCAL_MODEL}}",
+      "name": "Local Model (vLLM)",
+      "input": ["text"],
+      "cost": { "input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0 },
+      "contextWindow": 131072,
+      "maxTokens": 32768
+    }
+  ]
+}
+```
+
+- vLLM uses `"EMPTY"` as the conventional dummy API key
+- Typical port: `8000`; adjust to match your `--port` flag
+
+### Cloud provider (OpenAI-compatible pattern)
+
+```json
+"myprovider": {
+  "baseUrl": "https://api.{{CLOUD_PROVIDER}}.com/v1",
+  "apiKey": "{{API_KEY}}",
+  "api": "openai-responses",
+  "models": [
+    {
+      "id": "{{CLOUD_MODEL}}",
+      "name": "Cloud Model",
+      "input": ["text", "image"],
+      "cost": { "input": 0.50, "output": 1.50, "cacheRead": 0.05, "cacheWrite": 0.25 },
+      "contextWindow": 128000,
+      "maxTokens": 16384
+    }
+  ]
+}
+```
+
+- `cost` values are per-million-tokens; set to `0` for free/local
+- `input: ["text", "image"]` enables multimodal for that model
+
+### OpenRouter free tier (via OpenCode bridge)
+
+```json
+// No explicit provider block needed for opencode/* models.
+// Openclaw routes these through the OpenCode MCP bridge automatically.
+// Configure OpenCode separately: opencode-cli auth login
+// Then reference models as: "opencode/model-name"
+// Browse free models: openclaw models scan
+```
+
+- `opencode/*` model IDs are resolved by the OpenCode MCP bridge
+- Free tier has rate limits — use local models for high-volume tasks
+- Useful for secondary/researcher agents that don't need premium capability
+
+### Adding a Provider (template)
+
+```json
+"<provider-name>": {
+  "baseUrl": "http://<host>:<port>/v1",
+  "apiKey": "<key-or-dummy>",
+  "api": "openai-responses",
+  "models": [
+    {
+      "id": "<model-id-as-served>",
+      "name": "<human-readable-name>",
+      "reasoning": false,
+      "input": ["text"],
+      "cost": { "input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0 },
+      "contextWindow": 32768,
       "maxTokens": 8192
     }
   ]
 }
 ```
 
-## Agent Roster (Template)
+After adding a provider: `openclaw config validate && systemctl --user restart openclaw-gateway.service`
 
-| Agent | Model | Role | Alias |
-|-------|-------|------|-------|
-| **main** ({{AGENT_MAIN}}) | `<provider>/<model-id>` | Primary agent — coding, orchestration, user comms | -- |
-| **{{AGENT_WORKER}}** | `<provider>/<model-id>` | Worker agent — specialized tasks, research, tool ops | `{{AGENT_WORKER}}` |
-| **{{AGENT_RESEARCHER}}** | `<provider>/<model-id>` | Research agent — web search, documentation, analysis | `{{AGENT_RESEARCHER}}` |
+## Agent Roster (Domain-Locked Fleet)
+
+The architecture enforces security through isolation: each agent is locked to a specific domain. No agent has both the full picture and the full toolkit. Context flows UP, execution flows DOWN.
+
+| Agent ID | Name | Model | Role | Security Domain |
+|----------|------|-------|------|----------------|
+| `main` | Atlas | `{{PRIMARY_MODEL}}` | Orchestrator — delegates, synthesizes, never executes directly | Coordination only. No direct file/code/email access. |
+| `pm` | Conductor | `{{PRIMARY_MODEL}}` | Project Manager — scans, prioritizes, delegates | Project metadata only. Reads specs, task queues, status. No code execution. |
+| `engineer` | Forge | `{{PRIMARY_MODEL}}` | Senior Engineer — builds, fixes, ships code | Code execution, build tooling, git. No email, no storage, no infra. |
+| `mail` | Hermes | `{{SECONDARY_MODEL}}` | Mail Agent — email triage, GTD, follow-ups | Email domain ONLY. Cannot touch code, files, or infrastructure. |
+| `worker` | Bolt | `{{LOCAL_MODEL}}` | Compute Worker — cheap, dumb, local, air-gapped | Local compute only. No network, no email, no user comms. Nothing leaves the machine. |
+| `researcher` | Scout | `{{SECONDARY_MODEL}}` | Web Researcher — searches, reads, reports | Web read-only. Cannot write files, send emails, or execute code. |
+| `files` | Courier | `{{LOCAL_MODEL}}` | File Agent — transfers, backups, storage ops | File system and storage only. No code execution, no email, no web. |
+| `tester` | Sentinel | `{{SECONDARY_MODEL}}` | Test & Verify — validates, never modifies source | Read + execute tests only. Cannot modify source code. Verifies what Forge built. |
+
+**Design principle:** Workers (Bolt, Courier) use `{{LOCAL_MODEL}}` — sensitive data never leaves the machine. Cloud models (Atlas, Forge) handle coordination and code but never touch raw data files or credentials. Sentinel verifies what Forge builds — the agent that writes code is never the agent that validates it.
 
 ## Learnings & Gotchas
 
 1. **Always restart gateway after config changes:** `systemctl --user restart openclaw-gateway.service`
-2. **`heartbeat.target` defaults to `"none"`** — must explicitly set to your channel type with a `to` field
-3. **`gateway.auth.scopes` is NOT valid** — OpenClaw uses device pairing for scopes
-4. **Inter-agent dispatch uses `sessions_spawn`** — the `message` tool routes through the notification channel
+2. **`heartbeat.target` defaults to `"none"`** — must explicitly set to `"telegram"` (or your channel) with a `to` field
+3. **`gateway.auth.scopes` is NOT valid** — Openclaw uses device pairing for scopes
+4. **Inter-agent dispatch uses `sessions_spawn`** — the `message` tool routes through the notification channel (Telegram/Discord/Slack)
 5. **`tools.elevated.allowFrom`** should be set at global level, not per-agent (duplicates cause confusion)
 6. **Exec approvals `mode: "both"`** means both notification channel and webchat can approve
 7. **Config validate before restart:** `openclaw config validate` catches JSON errors before they break the gateway
-8. **MCP provider bridges:** Some providers (e.g., OpenCode) don't need a provider block in openclaw.json — they route through MCP bridge automatically
+8. **OpenCode as provider bridge:** `opencode/*` models don't need a provider block in openclaw.json — they route through the MCP bridge automatically
+9. **When adding a new agent, always populate workspace files (IDENTITY.md, TOOLS.md, HEARTBEAT.md, TASKS.md)** — blank templates cause agents to hallucinate their capabilities. An agent without a populated IDENTITY.md doesn't know its role, scope, or constraints. Fill all workspace files before the first dispatch.
+10. **Test agent dispatch end-to-end after adding:** spawn from orchestrator, verify response arrives, check notification delivery. Don't assume it works because config validates — a missing binding or wrong channel ID will silently drop messages.
+11. **Workspace files are living documents** — review them on every agent improvement cycle. Stale TOOLS.md (listing tools the agent doesn't have, or missing tools it does have) is the #1 cause of agent confusion. See `docs/workspace-examples/` for battle-tested templates.
+12. **Check conversation history before adding tools.** When an agent fails a task, often it had the tools but IDENTITY.md or SOUL.md didn't give clear enough instructions about WHEN to use them. Fix the instructions first, add tools second.
+13. **Cost optimization: route simple tasks through local models.** Cloud API tokens add up fast on tasks that don't need reasoning — file operations, health checks, log parsing. Bolt on local GPU costs nothing.
+14. **Governor should review agent sessions weekly.** Look for: tools the agent tried but failed to use (need adding), tasks the agent escalated unnecessarily (needs better instructions), repeated errors (needs a rule in IDENTITY.md). Use `/agent-improvement` to run the full audit.

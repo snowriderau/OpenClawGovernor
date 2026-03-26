@@ -1,13 +1,13 @@
-# Watchdog & Heartbeat System
+# Spec: Watchdog & Heartbeat System
 
 ## Overview
+**Feature ID:** FEAT-WATCHDOG
 **Title:** Fault-Tolerant Watchdog & Remote Heartbeat
-**Author:** Claude
-**Status:** Template
-**Last Updated:** 2026-03-26
+**Status:** Draft — configure for your environment
+**Last Updated:** YYYY-MM-DD
 
 ## Problem
-A server running autonomous AI workloads (local inference, agent gateway) needs:
+A home server running autonomous AI workloads (local inference, Openclaw) needs:
 - Auto-recovery when services crash or hang
 - Remote visibility into health status
 - Ability to restart from outside if completely stuck
@@ -16,22 +16,23 @@ A server running autonomous AI workloads (local inference, agent gateway) needs:
 - Services restart automatically on failure
 - Owner can see machine status remotely
 - Owner can remotely restart services or machine if needed
-- Agents can monitor and self-heal their own processes
+- Openclaw can monitor and self-heal its own processes
+
+---
 
 ## Architecture
 
 ```
-[Inference Server]  [Agent Gateway]  [Other Services]
-        |                  |                |
-        v                  v                v
-   [systemd watchdog (auto-restart)]
-        |
-        v
-   [Health Check Script] --> [Status log / endpoint]
-        |
-        v
-   [Remote Heartbeat] --> [External ping / alert]
+[Local Inference]  [Openclaw]  [Other Services]
+        ↓               ↓              ↓
+  [systemd watchdog (auto-restart on each service)]
+        ↓
+  [Health Check Script] → [Status log / endpoint]
+        ↓
+  [Remote Heartbeat] → [Notification channel alert]
 ```
+
+---
 
 ## Component 1: systemd Auto-Restart
 
@@ -47,30 +48,30 @@ WatchdogSec=30
 ```
 
 **Restart policies:**
-- `Restart=always` -- restart on any exit (crash, kill, etc.)
-- `RestartSec=10` -- wait 10 seconds before restart
-- `StartLimitBurst=5` -- max 5 restarts per `StartLimitIntervalSec`
-- `WatchdogSec=30` -- notify systemd every 30 sec or be killed
+- `Restart=always` — restart on any exit (crash, kill, etc.)
+- `RestartSec=10` — wait 10 seconds before restart
+- `StartLimitBurst=5` — max 5 restarts per `StartLimitIntervalSec`
+- `WatchdogSec=30` — notify systemd every 30 sec or be killed
 
 ### Local Inference Service (`/etc/systemd/system/local-inference.service`)
 ```ini
 [Unit]
-Description=Local Inference Server
+Description=Local AI Inference Server
 After=network-online.target
 Wants=network-online.target
 
 [Service]
 Type=simple
 User={{USERNAME}}
-WorkingDirectory=/opt/openclaw
-ExecStart=/usr/bin/inference-server start --port {{INFERENCE_PORT}}
-ExecStop=/usr/bin/inference-server stop
+WorkingDirectory=/home/{{USERNAME}}
+ExecStart=<INFERENCE_START_COMMAND>
+ExecStop=<INFERENCE_STOP_COMMAND>
 Restart=always
 RestartSec=10
 StartLimitIntervalSec=120
 StartLimitBurst=3
-StandardOutput=append:/var/log/openclaw/inference.log
-StandardError=append:/var/log/openclaw/inference-error.log
+StandardOutput=append:/var/log/openclaw/local-inference.log
+StandardError=append:/var/log/openclaw/local-inference-error.log
 TimeoutStartSec=60
 KillMode=process
 
@@ -78,18 +79,20 @@ KillMode=process
 WantedBy=multi-user.target
 ```
 
-### Agent Gateway Service (`/etc/systemd/system/openclaw.service`)
+See `FEAT-LOCAL_INFERENCE.md` for specific ExecStart commands per inference option.
+
+### Openclaw Agent Service (`/etc/systemd/system/openclaw.service`)
 ```ini
 [Unit]
-Description=OpenClaw Autonomous Agent
+Description=Openclaw Autonomous Agent
 After=network-online.target local-inference.service
 Wants=local-inference.service
 
 [Service]
 Type=simple
 User={{USERNAME}}
-WorkingDirectory=/opt/openclaw
-ExecStart=/opt/openclaw/run.sh
+WorkingDirectory=/home/{{USERNAME}}/.openclaw
+ExecStart=<OPENCLAW_BINARY> --agent main
 Restart=always
 RestartSec=15
 StartLimitIntervalSec=180
@@ -103,6 +106,8 @@ KillMode=process
 WantedBy=multi-user.target
 ```
 
+---
+
 ## Component 2: Health Check Script
 
 Local script that checks all service health and logs status.
@@ -110,7 +115,7 @@ Local script that checks all service health and logs status.
 ### `/opt/openclaw/scripts/healthcheck.sh`
 ```bash
 #!/bin/bash
-# Health Check Script for OpenClaw system
+# Health Check Script for Openclaw/local inference system
 # Runs every 5 minutes via systemd timer
 
 LOGFILE="/var/log/openclaw/health.log"
@@ -138,9 +143,8 @@ check_port() {
 
 # Run checks
 INFERENCE_STATUS=$(check_service local-inference)
-AGENT_STATUS=$(check_service openclaw)
-INFERENCE_PORT_STATUS=$(check_port {{INFERENCE_PORT}})
-GATEWAY_PORT_STATUS=$(check_port {{GATEWAY_PORT}})
+OPENCLAW_STATUS=$(check_service openclaw)
+INFERENCE_PORT=$(check_port {{LOCAL_INFERENCE_PORT}})
 DISK_USAGE=$(df -h / | awk 'NR==2{print $5}')
 MEM_USAGE=$(free | awk '/^Mem:/{printf "%.0f%%", $3/$2*100}')
 LOAD=$(uptime | awk -F'load average:' '{print $2}' | awk '{print $1}')
@@ -150,12 +154,11 @@ cat > "$STATUS_FILE" << EOF
 {
   "timestamp": "$TIMESTAMP",
   "services": {
-    "inference": "$INFERENCE_STATUS",
-    "agent": "$AGENT_STATUS"
+    "local_inference": "$INFERENCE_STATUS",
+    "openclaw": "$OPENCLAW_STATUS"
   },
   "ports": {
-    "inference_{{INFERENCE_PORT}}": "$INFERENCE_PORT_STATUS",
-    "gateway_{{GATEWAY_PORT}}": "$GATEWAY_PORT_STATUS"
+    "inference_{{LOCAL_INFERENCE_PORT}}": "$INFERENCE_PORT"
   },
   "system": {
     "disk": "$DISK_USAGE",
@@ -166,16 +169,16 @@ cat > "$STATUS_FILE" << EOF
 EOF
 
 # Log summary
-echo "[$TIMESTAMP] inference=$INFERENCE_STATUS agent=$AGENT_STATUS disk=$DISK_USAGE mem=$MEM_USAGE load=$LOAD" >> "$LOGFILE"
+echo "[$TIMESTAMP] inference=$INFERENCE_STATUS openclaw=$OPENCLAW_STATUS disk=$DISK_USAGE mem=$MEM_USAGE load=$LOAD" >> "$LOGFILE"
 
 # Alert if something is down
-if [ "$INFERENCE_STATUS" = "DOWN" ] || [ "$AGENT_STATUS" = "DOWN" ]; then
+if [ "$INFERENCE_STATUS" = "DOWN" ] || [ "$OPENCLAW_STATUS" = "DOWN" ]; then
     echo "[$TIMESTAMP] ALERT: Service down - attempting restart" >> "$LOGFILE"
     if [ "$INFERENCE_STATUS" = "DOWN" ]; then
         systemctl restart local-inference
         sleep 5
         NEW_STATUS=$(check_service local-inference)
-        echo "[$TIMESTAMP] Inference server restart result: $NEW_STATUS" >> "$LOGFILE"
+        echo "[$TIMESTAMP] Inference restart result: $NEW_STATUS" >> "$LOGFILE"
     fi
 fi
 ```
@@ -183,7 +186,7 @@ fi
 ### Health Check Timer (`/etc/systemd/system/openclaw-health.timer`)
 ```ini
 [Unit]
-Description=OpenClaw Health Check Timer
+Description=Openclaw Health Check Timer
 
 [Timer]
 OnBootSec=60
@@ -197,7 +200,7 @@ WantedBy=timers.target
 ### Health Check Service (`/etc/systemd/system/openclaw-health.service`)
 ```ini
 [Unit]
-Description=OpenClaw Health Check
+Description=Openclaw Health Check
 
 [Service]
 Type=oneshot
@@ -205,15 +208,18 @@ User={{USERNAME}}
 ExecStart=/opt/openclaw/scripts/healthcheck.sh
 ```
 
+---
+
 ## Component 3: Remote Heartbeat
 
-Options for remote visibility (pick one based on available infrastructure):
+Options for remote visibility — pick one based on your infrastructure.
 
 ### Option A: Simple HTTP endpoint (recommended)
 Expose the health_status.json via a lightweight HTTP server on a non-standard port.
 
 ```python
 # /opt/openclaw/scripts/status_server.py
+
 import http.server
 import json
 import os
@@ -244,49 +250,51 @@ if __name__ == '__main__':
     server.serve_forever()
 ```
 
-Access from anywhere on local network: `curl http://{{LAN_IP}}:8888/health`
+Access from local network: `curl http://{{LAN_IP}}:8888/health`
+Access via Tailscale: `curl http://{{TAILSCALE_IP}}:8888/health`
 
-### Option B: SSH-based remote check
+### Option B: SSH-based remote restart
 ```bash
 # From remote machine, check status:
-ssh {{USERNAME}}@{{LAN_IP}} 'cat /opt/openclaw/health_status.json'
+ssh {{USERNAME}}@{{TAILSCALE_IP}} 'cat /opt/openclaw/health_status.json'
 
 # From remote machine, restart service:
-ssh {{USERNAME}}@{{LAN_IP}} 'sudo systemctl restart openclaw'
+ssh {{USERNAME}}@{{TAILSCALE_IP}} 'sudo systemctl restart openclaw'
 ```
 
-### Option C: VPN/Tailscale (recommended for remote access)
+### Option C: Tailscale (recommended for remote access)
 ```bash
 sudo apt install tailscale
 sudo tailscale up
-# Then access via Tailscale IP from any device
-curl http://{{TAILSCALE_IP}}:8888/health
+# Then access via Tailscale IP ({{TAILSCALE_IP}}) from any device
 ```
+
+---
 
 ## Component 4: Self-Healing Script
 
-The agent system can run this to detect and fix its own environment:
+Openclaw agents can trigger this to detect and fix their own environment.
 
 ### `/opt/openclaw/scripts/self_heal.sh`
 ```bash
 #!/bin/bash
-# Self-healing script agents can trigger
+# Self-healing script Openclaw can trigger
 # Checks state and auto-restarts components
 
 log() { echo "[$(date '+%H:%M:%S')] $1" | tee -a /var/log/openclaw/self_heal.log; }
 
 log "Self-heal check started"
 
-# Check inference server
+# Check local inference
 if ! systemctl is-active --quiet local-inference; then
-    log "Inference server is down - restarting"
+    log "Local inference is down - restarting"
     sudo systemctl restart local-inference
     sleep 10
     if systemctl is-active --quiet local-inference; then
-        log "Inference server restarted successfully"
+        log "Local inference restarted successfully"
     else
-        log "Inference server restart FAILED - escalating"
-        echo "ALERT: Inference server failed to restart at $(date)" >> /opt/openclaw/alerts.txt
+        log "Local inference restart FAILED - escalating"
+        echo "ALERT: Local inference failed to restart at $(date)" >> /opt/openclaw/alerts.txt
     fi
 fi
 
@@ -297,7 +305,7 @@ if [ "$DISK" -gt 85 ]; then
     echo "WARN: Disk at ${DISK}% at $(date)" >> /opt/openclaw/alerts.txt
 fi
 
-# Check memory (restart if OOM risk)
+# Check memory (warn if >90%)
 MEM=$(free | awk '/^Mem:/{printf "%.0f", $3/$2*100}')
 if [ "$MEM" -gt 90 ]; then
     log "WARNING: Memory usage at ${MEM}%"
@@ -307,13 +315,15 @@ fi
 log "Self-heal check complete"
 ```
 
+---
+
 ## Setup Commands (Run Once)
 
 ```bash
 # 1. Create directories
 sudo mkdir -p /opt/openclaw/scripts
-sudo mkdir -p /var/log/openclaw
 sudo chown -R {{USERNAME}}:{{USERNAME}} /opt/openclaw
+sudo mkdir -p /var/log/openclaw
 sudo chown -R {{USERNAME}}:{{USERNAME}} /var/log/openclaw
 
 # 2. Copy scripts
@@ -336,15 +346,19 @@ systemctl status openclaw-health.timer
 cat /opt/openclaw/health_status.json
 ```
 
+---
+
 ## Acceptance Criteria
 
-- [ ] Inference server auto-restarts on crash
-- [ ] Agent gateway auto-restarts on crash
+- [ ] Local inference auto-restarts on crash
+- [ ] Openclaw agent auto-restarts on crash
 - [ ] Health check runs every 5 minutes
 - [ ] Health status viewable via HTTP endpoint
 - [ ] Self-heal script can restart services
 - [ ] Alerts written to file when things fail
 - [ ] Logs rotated to prevent disk fill
+
+---
 
 ## Log Rotation (`/etc/logrotate.d/openclaw`)
 ```

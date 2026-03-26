@@ -1,382 +1,406 @@
-#!/usr/bin/env bash
+#!/bin/bash
 # =============================================================================
-# OpenClaw Governor Template -- Interactive Setup
+# OpenClaw Governor — Interactive Setup Script
 # =============================================================================
-# Collects configuration values, writes .env, and replaces {{PLACEHOLDER}}
-# tokens across all template files. Idempotent: safe to re-run.
+# Asks for your environment values, writes .env, and replaces all {{PLACEHOLDER}}
+# tokens across template files.
+#
+# IDEMPOTENT: Re-running sources your existing .env as defaults.
+# Run again whenever you add new agents or change your network config.
 # =============================================================================
 
 set -euo pipefail
 
 # ---------------------------------------------------------------------------
-# Colors & helpers
+# Colour helpers (graceful fallback if tput is unavailable)
 # ---------------------------------------------------------------------------
-if command -v tput &>/dev/null && [ -t 1 ]; then
+if command -v tput &>/dev/null && tput colors &>/dev/null; then
   BOLD=$(tput bold)
   DIM=$(tput dim)
-  RESET=$(tput sgr0)
-  BLUE=$(tput setaf 4)
+  RED=$(tput setaf 1)
   GREEN=$(tput setaf 2)
   YELLOW=$(tput setaf 3)
   CYAN=$(tput setaf 6)
-  RED=$(tput setaf 1)
+  BLUE=$(tput setaf 4)
+  RESET=$(tput sgr0)
 else
-  BOLD="" DIM="" RESET="" BLUE="" GREEN="" YELLOW="" CYAN="" RED=""
+  BOLD="" DIM="" RED="" GREEN="" YELLOW="" CYAN="" BLUE="" RESET=""
 fi
 
-REPO_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-ENV_FILE="$REPO_DIR/.env"
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ENV_FILE="${REPO_ROOT}/.env"
 
-banner() {
-  echo ""
-  echo "${BLUE}${BOLD}=====================================================================${RESET}"
-  echo "${BLUE}${BOLD}  $1${RESET}"
-  echo "${BLUE}${BOLD}=====================================================================${RESET}"
-  echo ""
-}
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+header() { echo; echo "${BOLD}${CYAN}── $1 ${RESET}"; }
+info()   { echo "  ${DIM}$1${RESET}"; }
+ok()     { echo "  ${GREEN}✓${RESET} $1"; }
+warn()   { echo "  ${YELLOW}!${RESET} $1"; }
+err()    { echo "  ${RED}✗${RESET} $1"; }
 
-section() {
-  echo ""
-  echo "${CYAN}${BOLD}--- $1 ---${RESET}"
-  echo ""
-}
-
-# prompt VAR_NAME "Prompt text" "default_value"
-prompt() {
-  local var_name="$1" prompt_text="$2" default="$3" value
-  if [ -n "$default" ]; then
-    printf "  ${GREEN}%s${RESET} [${DIM}%s${RESET}]: " "$prompt_text" "$default"
+ask() {
+  # ask <var_name> <prompt> <default>
+  local var="$1" prompt="$2" default="${3:-}"
+  local current
+  current="${!var:-${default}}"
+  local display_default="${current:+${DIM}[${current}]${RESET}}"
+  printf "  %s %s: " "${prompt}" "${display_default}"
+  read -r input
+  if [[ -n "$input" ]]; then
+    printf -v "$var" '%s' "$input"
+  elif [[ -n "$current" ]]; then
+    printf -v "$var" '%s' "$current"
   else
-    printf "  ${GREEN}%s${RESET}: " "$prompt_text"
+    printf -v "$var" '%s' ""
   fi
-  read -r value
-  value="${value:-$default}"
-  eval "$var_name=\"\$value\""
 }
 
-# prompt_yn VAR_NAME "Prompt text" "y/n default"
-prompt_yn() {
-  local var_name="$1" prompt_text="$2" default="$3" value
-  printf "  ${GREEN}%s${RESET} [${DIM}%s${RESET}]: " "$prompt_text" "$default"
-  read -r value
-  value="${value:-$default}"
-  value="$(echo "$value" | tr '[:upper:]' '[:lower:]')"
-  eval "$var_name=\"\$value\""
+ask_yn() {
+  # ask_yn <prompt> — returns 0 for yes, 1 for no
+  local prompt="$1"
+  printf "  %s [y/N]: " "${prompt}"
+  read -r input
+  [[ "${input,,}" == "y" || "${input,,}" == "yes" ]]
 }
 
 validate_ip() {
   local ip="$1"
-  if [ -z "$ip" ]; then return 0; fi
-  if [[ "$ip" =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
-    return 0
-  elif [[ "$ip" =~ ^100\. ]]; then
-    # Tailscale IPs
-    return 0
-  fi
-  echo "  ${RED}Warning: '$ip' doesn't look like a valid IPv4 address.${RESET}"
-  return 0  # warn but don't block
+  [[ "$ip" =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]
+}
+
+validate_nonempty() {
+  [[ -n "${1:-}" ]]
 }
 
 # ---------------------------------------------------------------------------
-# Welcome
+# Load existing .env as defaults (idempotency)
 # ---------------------------------------------------------------------------
-banner "OpenClaw Governor Template -- Setup"
-
-echo "  This script will configure your Governor template by collecting"
-echo "  information about your target machine, agents, and preferences."
-echo ""
-echo "  ${DIM}Press Enter to accept defaults shown in [brackets].${RESET}"
-echo "  ${DIM}Re-run this script anytime to update your configuration.${RESET}"
-echo ""
-
-if [ -f "$ENV_FILE" ]; then
-  echo "  ${YELLOW}Existing .env found. Values will be used as defaults.${RESET}"
-  echo ""
-  # shellcheck disable=SC1090
-  source "$ENV_FILE" 2>/dev/null || true
+if [[ -f "$ENV_FILE" ]]; then
+  # shellcheck source=/dev/null
+  set -a; source "$ENV_FILE"; set +a
+  warn "Loaded existing .env — existing values shown as defaults."
 fi
 
 # ---------------------------------------------------------------------------
-# Section 1: Target Machine
+# Banner
 # ---------------------------------------------------------------------------
-section "1/6  Target Machine"
-
-prompt HOSTNAME    "Hostname"                "${HOSTNAME:-my-server}"
-prompt DISTRO      "Linux distribution"      "${DISTRO:-Ubuntu 24.04}"
-prompt USERNAME    "SSH username"             "${USERNAME:-$(whoami)}"
-prompt LAN_IP      "LAN IP address"           "${LAN_IP:-192.168.1.100}"
-validate_ip "$LAN_IP"
-
-echo ""
-echo "  ${DIM}Hardware (used for agent config & documentation):${RESET}"
-prompt GPU_MODEL   "GPU model"               "${GPU_MODEL:-RTX 4090}"
-prompt GPU_VRAM    "GPU VRAM"                "${GPU_VRAM:-24GB}"
-prompt CPU_MODEL   "CPU model"               "${CPU_MODEL:-AMD Ryzen 9 7950X}"
-prompt RAM_SIZE    "Total RAM"               "${RAM_SIZE:-64GB}"
+clear
+echo
+echo "${BOLD}${BLUE}╔═══════════════════════════════════════════════════════╗${RESET}"
+echo "${BOLD}${BLUE}║         OpenClaw Governor — Setup Wizard              ║${RESET}"
+echo "${BOLD}${BLUE}╚═══════════════════════════════════════════════════════╝${RESET}"
+echo
+echo "  This script configures your template by replacing all"
+echo "  ${CYAN}{{PLACEHOLDER}}${RESET} tokens across docs, configs, and scripts."
+echo
+echo "  Press ${BOLD}Enter${RESET} to accept a default value shown in brackets."
+echo
 
 # ---------------------------------------------------------------------------
-# Section 2: Remote Access
+# Section 1: Machine identity
 # ---------------------------------------------------------------------------
-section "2/6  Remote Access"
+header "1. Linux Machine Identity"
 
-prompt_yn USE_TAILSCALE "Use Tailscale VPN?" "${USE_TAILSCALE:-y}"
-if [[ "$USE_TAILSCALE" == "y" ]]; then
-  prompt TAILSCALE_IP "Tailscale IP" "${TAILSCALE_IP:-100.x.x.x}"
-  validate_ip "$TAILSCALE_IP"
-else
-  TAILSCALE_IP=""
-fi
+ask HOSTNAME    "Hostname (e.g. myserver)"        "${HOSTNAME:-my-linux-box}"
+ask USERNAME    "Linux username"                   "${USERNAME:-$(whoami)}"
 
-prompt_yn USE_NAS "Use NAS / jump host?" "${USE_NAS:-n}"
-if [[ "$USE_NAS" == "y" ]]; then
-  prompt NAS_IP       "NAS / jump host IP"     "${NAS_IP:-192.168.1.200}"
-  validate_ip "$NAS_IP"
-  prompt NAS_SSH_PORT "NAS SSH port"           "${NAS_SSH_PORT:-22}"
-else
-  NAS_IP=""
-  NAS_SSH_PORT="22"
-fi
+while true; do
+  ask LAN_IP "LAN IP address" "${LAN_IP:-192.168.1.x}"
+  if validate_ip "$LAN_IP"; then break
+  else err "Invalid IP format. Try again."; fi
+done
 
 # ---------------------------------------------------------------------------
-# Section 3: Services
+# Section 2: Tailscale (optional)
 # ---------------------------------------------------------------------------
-section "3/6  Services"
-
-echo "  ${DIM}Inference server (LM Studio, Ollama, vLLM, LocalAI, etc.):${RESET}"
-prompt INFERENCE_TYPE "Inference server type" "${INFERENCE_TYPE:-lmstudio}"
-prompt INFERENCE_PORT "Inference server port" "${INFERENCE_PORT:-1234}"
-prompt GATEWAY_PORT   "OpenClaw Gateway port" "${GATEWAY_PORT:-18789}"
-prompt MODEL_DIR      "Model directory"       "${MODEL_DIR:-/opt/models}"
-
-prompt_yn USE_CONTAINERS "Use containers (Docker/Podman)?" "${USE_CONTAINERS:-y}"
-if [[ "$USE_CONTAINERS" == "y" ]]; then
-  prompt CONTAINER_RUNTIME "Container runtime" "${CONTAINER_RUNTIME:-docker}"
-else
-  CONTAINER_RUNTIME=""
+header "2. Tailscale VPN (optional — skip with Enter)"
+echo
+info "Tailscale lets you reach your machine securely from anywhere."
+echo
+USE_TAILSCALE=false
+if ask_yn "Are you using Tailscale?"; then
+  USE_TAILSCALE=true
+  while true; do
+    ask TAILSCALE_IP "Tailscale IP" "${TAILSCALE_IP:-100.x.x.x}"
+    if validate_ip "$TAILSCALE_IP"; then break
+    else err "Invalid IP format. Try again."; fi
+  done
 fi
 
 # ---------------------------------------------------------------------------
-# Section 4: Agent Hierarchy
+# Section 3: NAS / Network Storage (optional)
 # ---------------------------------------------------------------------------
-section "4/6  Agent Hierarchy"
-
-echo "  ${DIM}Configure your primary cloud model and local model:${RESET}"
-prompt PRIMARY_MODEL    "Primary cloud model"  "${PRIMARY_MODEL:-claude-sonnet-4}"
-prompt LOCAL_MODEL      "Local model"          "${LOCAL_MODEL:-llama3-70b}"
-
-echo ""
-echo "  ${DIM}Agent names (used in configs and dispatch rules):${RESET}"
-prompt AGENT_MAIN       "Orchestrator name (Tier 1)" "${AGENT_MAIN:-ops-commander}"
-prompt AGENT_WORKER     "GPU worker name (Tier 3)"   "${AGENT_WORKER:-gpu-runner}"
-prompt AGENT_RESEARCHER "Research agent name (Tier 3)" "${AGENT_RESEARCHER:-web-scout}"
-
-# ---------------------------------------------------------------------------
-# Section 5: Notifications
-# ---------------------------------------------------------------------------
-section "5/6  Notifications"
-
-echo "  ${DIM}Choose how you want to receive alerts from agents:${RESET}"
-echo "  ${DIM}Options: telegram, slack, email, none${RESET}"
-prompt NOTIFY_CHANNEL "Notification channel" "${NOTIFY_CHANNEL:-telegram}"
-
-case "$NOTIFY_CHANNEL" in
-  telegram)
-    prompt TELEGRAM_BOT     "Telegram bot token/handle" "${TELEGRAM_BOT:-@MyBot}"
-    prompt TELEGRAM_USER_ID "Telegram user/chat ID"     "${TELEGRAM_USER_ID:-123456789}"
-    ;;
-  slack)
-    prompt SLACK_WEBHOOK "Slack webhook URL" "${SLACK_WEBHOOK:-https://hooks.slack.com/...}"
-    TELEGRAM_BOT="" TELEGRAM_USER_ID=""
-    ;;
-  email)
-    prompt ALERT_EMAIL "Alert email address" "${ALERT_EMAIL:-alerts@example.com}"
-    TELEGRAM_BOT="" TELEGRAM_USER_ID=""
-    ;;
-  *)
-    TELEGRAM_BOT="" TELEGRAM_USER_ID=""
-    ;;
-esac
+header "3. NAS / Network Storage (optional — skip with Enter)"
+echo
+USE_NAS=false
+if ask_yn "Do you have a NAS or secondary storage machine?"; then
+  USE_NAS=true
+  while true; do
+    ask NAS_IP "NAS IP address" "${NAS_IP:-192.168.1.x}"
+    if validate_ip "$NAS_IP"; then break
+    else err "Invalid IP format. Try again."; fi
+  done
+  ask NAS_SSH_PORT "NAS SSH port" "${NAS_SSH_PORT:-22}"
+fi
 
 # ---------------------------------------------------------------------------
-# Section 6: Identity
+# Section 4: SSH
 # ---------------------------------------------------------------------------
-section "6/6  Identity"
+header "4. SSH Key"
 
-prompt GITHUB_USER "GitHub username" "${GITHUB_USER:-myuser}"
-prompt EMAIL       "Email address"   "${EMAIL:-user@example.com}"
+ask SSH_KEY_PATH "Path to SSH private key" "${SSH_KEY_PATH:-~/.ssh/id_ed25519}"
 
 # ---------------------------------------------------------------------------
-# Write .env
+# Section 5: Hardware / Inference
 # ---------------------------------------------------------------------------
-banner "Writing Configuration"
+header "5. Hardware and Inference"
 
-cat > "$ENV_FILE" <<ENVEOF
+ask GPU           "GPU model (e.g. RTX 4090)"             "${GPU:-RTX 4090}"
+ask INFERENCE_PORT "Local inference port (LM Studio / Ollama)" "${INFERENCE_PORT:-1234}"
+ask GATEWAY_PORT  "Openclaw gateway port"                  "${GATEWAY_PORT:-18789}"
+
+# ---------------------------------------------------------------------------
+# Section 6: Models
+# ---------------------------------------------------------------------------
+header "6. Model Configuration"
+echo
+info "PRIMARY_MODEL: used by Atlas, Conductor, Forge, Hermes (cloud)"
+info "LOCAL_MODEL:   used by Bolt, Courier (local inference — data stays on machine)"
+info "SECONDARY_MODEL: used by Scout, Sentinel (lighter cloud model)"
+echo
+
+ask PRIMARY_MODEL   "Primary cloud model"   "${PRIMARY_MODEL:-claude-opus-4-5}"
+ask LOCAL_MODEL     "Local model ID"        "${LOCAL_MODEL:-qwen3.5-35b-a3b}"
+ask SECONDARY_MODEL "Secondary cloud model" "${SECONDARY_MODEL:-claude-haiku-4-5}"
+
+# ---------------------------------------------------------------------------
+# Section 7: Agent names
+# ---------------------------------------------------------------------------
+header "7. Agent Configuration"
+echo
+info "AGENT_MAIN is the name of your orchestrator agent (Atlas by default)."
+echo
+
+ask AGENT_MAIN "Orchestrator agent name" "${AGENT_MAIN:-Atlas}"
+
+# ---------------------------------------------------------------------------
+# Section 8: Notification channel (Telegram optional)
+# ---------------------------------------------------------------------------
+header "8. Notification Channel — Telegram (optional)"
+echo
+info "Only Atlas sends to the notification channel. All other agents escalate."
+echo
+USE_TELEGRAM=false
+if ask_yn "Are you using Telegram for notifications?"; then
+  USE_TELEGRAM=true
+  ask TELEGRAM_BOT_TOKEN "Telegram bot token (from @BotFather)" "${TELEGRAM_BOT_TOKEN:-}"
+  ask TELEGRAM_USER_ID   "Your Telegram user ID (integer)"       "${TELEGRAM_USER_ID:-}"
+  ask TELEGRAM_BOT       "Bot username (e.g. @MyAgentBot)"       "${TELEGRAM_BOT:-@MyAgentBot}"
+fi
+
+# ---------------------------------------------------------------------------
+# Section 9: GitHub
+# ---------------------------------------------------------------------------
+header "9. GitHub"
+
+ask GITHUB_USER "GitHub username" "${GITHUB_USER:-your-github-username}"
+
+# ---------------------------------------------------------------------------
+# Section 10: Email (optional)
+# ---------------------------------------------------------------------------
+header "10. Email — for Hermes agent (optional)"
+echo
+USE_EMAIL=false
+if ask_yn "Will you be using the Hermes email agent?"; then
+  USE_EMAIL=true
+  ask EMAIL "Agent email address (OAuth account)" "${EMAIL:-agent@example.com}"
+fi
+
+# ---------------------------------------------------------------------------
+# Write .env file
+# ---------------------------------------------------------------------------
+header "Writing .env"
+
+cat > "$ENV_FILE" <<EOF
 # =============================================================================
-# OpenClaw Governor Template -- Environment Configuration
+# OpenClaw Governor — Environment Configuration
+# Generated by scripts/init.sh — $(date +"%Y-%m-%d %H:%M:%S")
 # =============================================================================
-# Generated by scripts/init.sh on $(date '+%Y-%m-%d %H:%M:%S')
-# Re-run scripts/init.sh to update.
-# =============================================================================
+# DO NOT commit this file. It is listed in .gitignore.
+# Re-run scripts/init.sh to update values.
 
-# --- Target Machine ---
-HOSTNAME=$HOSTNAME
-DISTRO="$DISTRO"
-USERNAME=$USERNAME
-LAN_IP=$LAN_IP
-TAILSCALE_IP=$TAILSCALE_IP
-NAS_IP=$NAS_IP
-NAS_SSH_PORT=$NAS_SSH_PORT
+# Machine identity
+HOSTNAME="${HOSTNAME}"
+USERNAME="${USERNAME}"
+LAN_IP="${LAN_IP}"
 
-# --- Hardware ---
-GPU_MODEL="$GPU_MODEL"
-GPU_VRAM=$GPU_VRAM
-CPU_MODEL="$CPU_MODEL"
-RAM_SIZE=$RAM_SIZE
+# Tailscale VPN
+TAILSCALE_IP="${TAILSCALE_IP:-}"
 
-# --- Agent Configuration ---
-AGENT_MAIN=$AGENT_MAIN
-AGENT_WORKER=$AGENT_WORKER
-AGENT_RESEARCHER=$AGENT_RESEARCHER
-PRIMARY_MODEL=$PRIMARY_MODEL
-LOCAL_MODEL=$LOCAL_MODEL
+# NAS / Network storage
+NAS_IP="${NAS_IP:-}"
+NAS_SSH_PORT="${NAS_SSH_PORT:-22}"
 
-# --- Ports ---
-GATEWAY_PORT=$GATEWAY_PORT
-INFERENCE_PORT=$INFERENCE_PORT
+# SSH
+SSH_KEY_PATH="${SSH_KEY_PATH}"
 
-# --- Services ---
-INFERENCE_TYPE=$INFERENCE_TYPE
-CONTAINER_RUNTIME=${CONTAINER_RUNTIME:-}
-MODEL_DIR=$MODEL_DIR
+# Hardware
+GPU="${GPU}"
 
-# --- Notifications ---
-NOTIFY_CHANNEL=$NOTIFY_CHANNEL
-TELEGRAM_BOT=$TELEGRAM_BOT
-TELEGRAM_USER_ID=$TELEGRAM_USER_ID
-SLACK_WEBHOOK=${SLACK_WEBHOOK:-}
-ALERT_EMAIL=${ALERT_EMAIL:-}
+# Inference ports
+INFERENCE_PORT="${INFERENCE_PORT}"
+GATEWAY_PORT="${GATEWAY_PORT}"
 
-# --- Identity ---
-EMAIL=$EMAIL
-GITHUB_USER=$GITHUB_USER
-ENVEOF
+# Models
+PRIMARY_MODEL="${PRIMARY_MODEL}"
+LOCAL_MODEL="${LOCAL_MODEL}"
+SECONDARY_MODEL="${SECONDARY_MODEL}"
 
-echo "  ${GREEN}Wrote${RESET} $ENV_FILE"
+# Agent names
+AGENT_MAIN="${AGENT_MAIN}"
+
+# Telegram
+TELEGRAM_BOT_TOKEN="${TELEGRAM_BOT_TOKEN:-}"
+TELEGRAM_USER_ID="${TELEGRAM_USER_ID:-}"
+TELEGRAM_BOT="${TELEGRAM_BOT:-}"
+
+# GitHub
+GITHUB_USER="${GITHUB_USER}"
+
+# Email
+EMAIL="${EMAIL:-}"
+EOF
+
+ok ".env written to ${ENV_FILE}"
 
 # ---------------------------------------------------------------------------
-# Replace placeholders across all template files
+# Template replacement — sed across all template files
 # ---------------------------------------------------------------------------
-echo ""
-echo "  ${CYAN}Replacing {{PLACEHOLDER}} values across template files...${RESET}"
-echo ""
+header "Applying placeholder replacements"
+echo
+info "Replacing {{PLACEHOLDER}} tokens in: *.md, *.svg, *.json, *.sh"
+echo
 
-# Build replacement map: PLACEHOLDER -> VALUE
-declare -A REPLACEMENTS=(
-  [HOSTNAME]="$HOSTNAME"
-  [DISTRO]="$DISTRO"
-  [USERNAME]="$USERNAME"
-  [LAN_IP]="$LAN_IP"
-  [TAILSCALE_IP]="${TAILSCALE_IP:-100.x.x.x}"
-  [NAS_IP]="${NAS_IP:-192.168.1.200}"
-  [GPU_MODEL]="$GPU_MODEL"
-  [GPU_VRAM]="$GPU_VRAM"
-  [CPU_MODEL]="$CPU_MODEL"
-  [RAM_SIZE]="$RAM_SIZE"
-  [EMAIL]="$EMAIL"
-  [TELEGRAM_BOT]="${TELEGRAM_BOT:-@MyBot}"
-  [TELEGRAM_USER_ID]="${TELEGRAM_USER_ID:-123456789}"
-  [GITHUB_USER]="$GITHUB_USER"
-  [MODEL_DIR]="$MODEL_DIR"
-  [GATEWAY_PORT]="$GATEWAY_PORT"
-  [INFERENCE_PORT]="$INFERENCE_PORT"
-  [AGENT_MAIN]="$AGENT_MAIN"
-  [AGENT_WORKER]="$AGENT_WORKER"
-  [AGENT_RESEARCHER]="$AGENT_RESEARCHER"
-  [PRIMARY_MODEL]="$PRIMARY_MODEL"
-  [LOCAL_MODEL]="$LOCAL_MODEL"
-)
+REPLACEMENT_COUNT=0
 
-# Find all text files (excluding .git, .env, and this script)
-file_count=0
-replaced_count=0
+do_replace() {
+  local placeholder="$1"
+  local value="$2"
+  local file_patterns=("${REPO_ROOT}"/**/*.md "${REPO_ROOT}"/**/*.svg "${REPO_ROOT}"/**/*.json "${REPO_ROOT}"/**/*.sh)
 
-while IFS= read -r -d '' file; do
-  # Skip binary files
-  if file "$file" | grep -q "text"; then
-    changed=false
-    for placeholder in "${!REPLACEMENTS[@]}"; do
-      value="${REPLACEMENTS[$placeholder]}"
-      # Use | as sed delimiter to handle / in paths
-      if grep -q "{{${placeholder}}}" "$file" 2>/dev/null; then
-        # Escape special chars for sed
-        escaped_value=$(printf '%s\n' "$value" | sed 's/[&/\]/\\&/g')
-        sed -i.bak "s|{{${placeholder}}}|${escaped_value}|g" "$file"
-        rm -f "${file}.bak"
-        changed=true
-        ((replaced_count++))
-      fi
-    done
-    if $changed; then
-      ((file_count++))
-      echo "  ${GREEN}Updated${RESET}  ${file#$REPO_DIR/}"
-    fi
-  fi
-done < <(find "$REPO_DIR" -type f \
-  -not -path '*/.git/*' \
-  -not -path '*/.env' \
-  -not -name 'init.sh' \
-  -not -name '*.svg' \
-  -print0 2>/dev/null)
+  # Use find for safety (handles spaces, avoids _source/ contamination)
+  while IFS= read -r -d '' file; do
+    # Skip _source/ directory — source reference files should not be modified
+    [[ "$file" == *"/_source/"* ]] && continue
+    # Skip this script itself
+    [[ "$file" == "${BASH_SOURCE[0]}" ]] && continue
+    # Skip .env and .env.example
+    [[ "$(basename "$file")" == ".env" ]] && continue
 
-# Handle SVG files separately (they use {{PLACEHOLDER}} too)
-while IFS= read -r -d '' file; do
-  changed=false
-  for placeholder in "${!REPLACEMENTS[@]}"; do
-    value="${REPLACEMENTS[$placeholder]}"
-    if grep -q "{{${placeholder}}}" "$file" 2>/dev/null; then
+    if grep -qF "{{${placeholder}}}" "$file" 2>/dev/null; then
+      # Escape forward slashes in the value for sed
+      local escaped_value
       escaped_value=$(printf '%s\n' "$value" | sed 's/[&/\]/\\&/g')
       sed -i.bak "s|{{${placeholder}}}|${escaped_value}|g" "$file"
       rm -f "${file}.bak"
-      changed=true
-      ((replaced_count++))
+      ((REPLACEMENT_COUNT++))
     fi
-  done
-  if $changed; then
-    ((file_count++))
-    echo "  ${GREEN}Updated${RESET}  ${file#$REPO_DIR/}"
-  fi
-done < <(find "$REPO_DIR" -name '*.svg' -print0 2>/dev/null)
+  done < <(find "$REPO_ROOT" \( -name "*.md" -o -name "*.svg" -o -name "*.json" -o -name "*.sh" \) -not -path "*/_source/*" -print0 2>/dev/null)
+}
+
+# Core identity replacements
+do_replace "HOSTNAME"          "$HOSTNAME"
+do_replace "USERNAME"          "$USERNAME"
+do_replace "LAN_IP"            "$LAN_IP"
+do_replace "GPU"               "$GPU"
+do_replace "INFERENCE_PORT"    "$INFERENCE_PORT"
+do_replace "GATEWAY_PORT"      "$GATEWAY_PORT"
+do_replace "PRIMARY_MODEL"     "$PRIMARY_MODEL"
+do_replace "LOCAL_MODEL"       "$LOCAL_MODEL"
+do_replace "SECONDARY_MODEL"   "$SECONDARY_MODEL"
+do_replace "AGENT_MAIN"        "$AGENT_MAIN"
+do_replace "GITHUB_USER"       "$GITHUB_USER"
+
+# Optional replacements (only if provided)
+if [[ "$USE_TAILSCALE" == true && -n "${TAILSCALE_IP:-}" ]]; then
+  do_replace "TAILSCALE_IP" "$TAILSCALE_IP"
+fi
+
+if [[ "$USE_NAS" == true ]]; then
+  [[ -n "${NAS_IP:-}" ]]       && do_replace "NAS_IP"       "$NAS_IP"
+  [[ -n "${NAS_SSH_PORT:-}" ]] && do_replace "NAS_SSH_PORT" "$NAS_SSH_PORT"
+fi
+
+if [[ "$USE_TELEGRAM" == true ]]; then
+  [[ -n "${TELEGRAM_BOT_TOKEN:-}" ]] && do_replace "TELEGRAM_BOT_TOKEN" "$TELEGRAM_BOT_TOKEN"
+  [[ -n "${TELEGRAM_USER_ID:-}" ]]   && do_replace "TELEGRAM_USER_ID"   "$TELEGRAM_USER_ID"
+  [[ -n "${TELEGRAM_BOT:-}" ]]       && do_replace "TELEGRAM_BOT"        "$TELEGRAM_BOT"
+fi
+
+if [[ "$USE_EMAIL" == true && -n "${EMAIL:-}" ]]; then
+  do_replace "EMAIL" "$EMAIL"
+fi
+
+# SSH key path
+do_replace "SSH_KEY_PATH" "$SSH_KEY_PATH"
+
+ok "Replaced tokens in ${REPLACEMENT_COUNT} file(s)."
+
+# ---------------------------------------------------------------------------
+# Post-setup checks
+# ---------------------------------------------------------------------------
+header "Post-setup checks"
+
+# Check for any remaining unreplaced placeholders (informational only)
+REMAINING=$(grep -r --include="*.md" --include="*.svg" --include="*.json" \
+  -o '{{[A-Z_]*}}' "$REPO_ROOT" \
+  --exclude-dir=_source \
+  --exclude-dir=".git" 2>/dev/null | sort -u || true)
+
+if [[ -n "$REMAINING" ]]; then
+  warn "The following placeholders were not replaced (optional sections skipped):"
+  echo "$REMAINING" | while read -r p; do echo "    ${DIM}${p}${RESET}"; done
+  echo
+  info "This is expected for optional features you chose not to configure."
+  info "Re-run this script to fill them in later."
+fi
+
+# Check if .env is gitignored
+if grep -q "^\.env$" "${REPO_ROOT}/.gitignore" 2>/dev/null; then
+  ok ".env is listed in .gitignore"
+else
+  warn ".env is NOT in .gitignore — add it before committing!"
+fi
 
 # ---------------------------------------------------------------------------
 # Summary
 # ---------------------------------------------------------------------------
-banner "Setup Complete"
+header "Setup complete"
+echo
+echo "  ${BOLD}Machine:${RESET}   ${USERNAME}@${HOSTNAME}  (LAN: ${LAN_IP})"
+if [[ "$USE_TAILSCALE" == true ]]; then
+  echo "  ${BOLD}Tailscale:${RESET} ${TAILSCALE_IP}"
+fi
+if [[ "$USE_NAS" == true ]]; then
+  echo "  ${BOLD}NAS:${RESET}       ${NAS_IP}:${NAS_SSH_PORT}"
+fi
+echo "  ${BOLD}GPU:${RESET}       ${GPU}"
+echo "  ${BOLD}Models:${RESET}    ${PRIMARY_MODEL} (cloud) | ${LOCAL_MODEL} (local)"
+echo "  ${BOLD}Ports:${RESET}     inference :${INFERENCE_PORT}  gateway :${GATEWAY_PORT}"
+if [[ "$USE_TELEGRAM" == true ]]; then
+  echo "  ${BOLD}Telegram:${RESET}  ${TELEGRAM_BOT} → ${TELEGRAM_USER_ID}"
+fi
+echo
 
-echo "  ${BOLD}Configuration Summary${RESET}"
-echo ""
-echo "  ${CYAN}Target:${RESET}        $USERNAME@$HOSTNAME ($LAN_IP)"
-echo "  ${CYAN}Distro:${RESET}        $DISTRO"
-echo "  ${CYAN}Hardware:${RESET}      $GPU_MODEL ($GPU_VRAM) | $CPU_MODEL | $RAM_SIZE RAM"
-echo "  ${CYAN}Gateway:${RESET}       port $GATEWAY_PORT"
-echo "  ${CYAN}Inference:${RESET}     $INFERENCE_TYPE on port $INFERENCE_PORT"
-echo "  ${CYAN}Models:${RESET}        Cloud: $PRIMARY_MODEL | Local: $LOCAL_MODEL"
-echo "  ${CYAN}Agents:${RESET}        $AGENT_MAIN (T1) | $AGENT_WORKER (T3) | $AGENT_RESEARCHER (T3)"
-echo "  ${CYAN}Notifications:${RESET} $NOTIFY_CHANNEL"
-echo "  ${CYAN}Identity:${RESET}      $GITHUB_USER <$EMAIL>"
-if [ -n "$TAILSCALE_IP" ] && [ "$TAILSCALE_IP" != "100.x.x.x" ]; then
-  echo "  ${CYAN}Tailscale:${RESET}     $TAILSCALE_IP"
-fi
-if [ -n "$NAS_IP" ]; then
-  echo "  ${CYAN}NAS/Jump:${RESET}      $NAS_IP:$NAS_SSH_PORT"
-fi
-echo ""
-echo "  ${GREEN}$file_count files updated${RESET} with ${GREEN}$replaced_count placeholder replacements${RESET}"
-echo ""
-echo "  ${DIM}Next steps:${RESET}"
-echo "    1. Review .env and adjust if needed"
-echo "    2. SSH into your target machine: ssh $USERNAME@$LAN_IP"
-echo "    3. Install OpenClaw on the target machine"
-echo "    4. Start your first agent: $AGENT_MAIN"
-echo ""
-echo "  ${DIM}Run this script again anytime to update your configuration.${RESET}"
-echo ""
+echo "  ${BOLD}Next steps:${RESET}"
+echo "  1. Review .env and verify all values are correct"
+echo "  2. Check remaining {{PLACEHOLDER}} tokens in template files (if any)"
+echo "  3. Copy openclaw.json template to ~/.openclaw/ on your Linux machine"
+echo "  4. Populate each agent's agentDir workspace files (IDENTITY.md, TOOLS.md, etc.)"
+echo "  5. Start the gateway: systemctl --user start openclaw-gateway.service"
+echo "  6. Verify end-to-end: send a message and confirm Atlas responds"
+echo
+echo "  ${DIM}See docs/best-practices.md for operational guidance.${RESET}"
+echo "  ${DIM}See docs/faq.md for common questions.${RESET}"
+echo

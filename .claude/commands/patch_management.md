@@ -1,7 +1,7 @@
 # Patch Management Workflow
 
 ## Purpose
-Regular assessment and application of security patches and updates to keep system secure and stable.
+Governor performs regular assessment and application of security patches and updates to keep target machines secure and stable. All phases are automated. Owner approval is required before production patch application.
 
 ## Frequency
 - **Security patches:** Apply within 1 week of release
@@ -10,11 +10,11 @@ Regular assessment and application of security patches and updates to keep syste
 
 ## Workflow Steps
 
-### Phase 1: Update Assessment (0.5 hours)
-Determine what updates are available and their importance.
+### Phase 1: Update Assessment (Automated, ~0.5 hours)
+Governor determines what updates are available and their importance.
 
 ```bash
-# Commands
+# Governor runs on the target machine via SSH
 - apt update (refresh package lists)
 - apt list --upgradable (show available updates)
 - apt-cache policy <package> (check specific versions)
@@ -26,17 +26,17 @@ Determine what updates are available and their importance.
 - Regular update count
 - Critical CVE updates
 
-### Phase 2: Security Review (1 hour)
-Evaluate patches for risk and necessity.
+### Phase 2: Security Review (Automated, ~1 hour)
+Governor evaluates patches for risk and necessity.
 
 For each security update:
 - [ ] What vulnerability does it fix?
 - [ ] How critical is the vulnerability?
-- [ ] Are we affected by this CVE?
+- [ ] Is the target machine affected by this CVE?
 - [ ] Known issues with this patch?
-- [ ] Compatibility with our setup?
+- [ ] Compatibility with the current setup?
 
-**Tools:**
+**Tools (Governor-executed):**
 - Ubuntu Security Advisories
 - CVE databases
 - Package changelogs
@@ -44,8 +44,8 @@ For each security update:
 
 **Output:** Patch evaluation report
 
-### Phase 3: Staging Environment (2-4 hours)
-Test patches before applying to production.
+### Phase 3: Staging Environment (Automated, 2-4 hours)
+Governor tests patches before applying to production.
 
 ```bash
 # Option 1: Test in VM or container
@@ -63,10 +63,10 @@ Test patches before applying to production.
 ```
 
 **Inputs:** Patches to test
-**Output:** Test results and approval/rejection
+**Output:** Test results and approval/rejection recommendation
 
-### Phase 4: Approval & Scheduling (0.5 hours)
-Get system owner approval before production application.
+### Phase 4: Approval & Scheduling (~0.5 hours)
+Governor requests owner approval before production application.
 
 **Approval needed for:**
 - All security updates
@@ -74,7 +74,7 @@ Get system owner approval before production application.
 - Major version updates
 - Packages with breaking changes
 
-**Approval template:**
+**Governor sends this approval request to owner:**
 ```
 Please review and approve patch application:
 - Patches: [list]
@@ -85,11 +85,11 @@ Please review and approve patch application:
 - Scheduled for: [Date/Time]
 ```
 
-### Phase 5: Backup & Snapshot (1 hour)
-Create restore point before applying patches.
+### Phase 5: Backup & Snapshot (Automated, ~1 hour)
+Governor creates a restore point before applying patches.
 
 ```bash
-# Backup strategy
+# Governor runs backup strategy
 - Snapshot filesystem if possible
 - Backup critical configs
 - Backup application data
@@ -99,19 +99,18 @@ Create restore point before applying patches.
 
 **Output:** Backup verified and ready
 
-### Phase 6: Patch Application (0.5-2 hours)
-Apply patches with monitoring.
+### Phase 6: Patch Application (Automated, 0.5-2 hours)
+Governor applies patches with continuous monitoring.
 
 ```bash
 # Process
 1. Schedule at maintenance window
-2. Notify system users
-3. Create backup checkpoint
-4. Run apt upgrade --yes
-5. Monitor for errors
-6. Reboot if kernel updates applied
-7. Verify all services running
-8. Test critical functionality
+2. Create backup checkpoint
+3. Run apt upgrade --yes
+4. Monitor for errors
+5. Reboot if kernel updates applied
+6. Verify all services running
+7. Test critical functionality
 ```
 
 **Monitoring during:**
@@ -120,10 +119,10 @@ Apply patches with monitoring.
 - Monitor system logs
 - Check disk space
 
-**Output:** Patch application log
+**Output:** Patch application log written to `failures.md` if any issues occur
 
-### Phase 7: Verification (1 hour)
-Confirm patches applied correctly and system stable.
+### Phase 7: Verification (Automated, ~1 hour)
+Governor confirms patches applied correctly and system is stable.
 
 ```bash
 # Checks
@@ -137,10 +136,10 @@ Confirm patches applied correctly and system stable.
 
 **Output:** Post-patch verification report
 
-### Phase 8: Documentation (0.5 hours)
-Record what was done for audit and future reference.
+### Phase 8: Documentation (Automated, ~0.5 hours)
+Governor records what was done for audit and future reference.
 
-**Document:**
+**Governor documents:**
 - Date and time of patching
 - Patches applied (list)
 - CVEs fixed
@@ -150,18 +149,18 @@ Record what was done for audit and future reference.
 
 ## Decision Points
 
-### Should we apply this patch?
-- Is it a security update? -> **YES**
-- Is system affected by CVE? -> **YES**
-- Are there known issues? -> Get owner approval
-- Would it cause downtime? -> Schedule and notify
+### Should this patch be applied?
+- Is it a security update? → **YES**
+- Is the machine affected by the CVE? → **YES**
+- Are there known issues? → Get owner approval
+- Would it cause downtime? → Schedule and notify owner
 
-### What if patch causes issues?
-- Log the error in failures.md
-- Rollback to backup snapshot
-- Document issue and investigation
-- Wait for patch fix or workaround
-- Notify system owner
+### What if a patch causes issues?
+- Governor logs the error in `failures.md`
+- Governor rolls back to backup snapshot
+- Governor documents issue and investigation
+- Governor waits for patch fix or workaround
+- Governor notifies owner with full report
 
 ## Success Criteria
 
@@ -171,19 +170,19 @@ Patching is successful when:
 - [ ] Services running normally
 - [ ] No errors in logs
 - [ ] Verification tests passed
-- [ ] Documentation updated
+- [ ] Documentation updated by Governor
 
 ## Rollback Procedure
 
-If patch causes problems:
+If a patch causes problems, Governor executes automatically:
 
 ```bash
 # Step 1: Identify issue
-# Check logs, test services, gather evidence
+# Governor checks logs, tests services, gathers evidence
 
 # Step 2: Prepare for rollback
-# Notify users of issue
-# Begin service shutdown if needed
+# Governor notifies owner of issue
+# Governor begins service shutdown if needed
 
 # Step 3: Restore from backup
 # Restore filesystem snapshot, or
@@ -195,16 +194,16 @@ If patch causes problems:
 # Check logs
 
 # Step 5: Document
-# Record what went wrong
+# Record what went wrong in failures.md
 # Update patch evaluation
 # Plan alternative approach
 ```
 
 ## Notes
 
-- Never patch unbackup'd system
-- Always test in staging first
-- Keep rollback plan documented
-- Schedule during maintenance window
-- Monitor heavily during and after
-- Allow time for system to stabilize
+- Never patch an unbacked-up system — Governor verifies backup first
+- Governor always tests in staging before production
+- Rollback plan is documented before every patch run
+- Patches are scheduled during maintenance windows
+- Governor monitors heavily during and after patching
+- Allow time for system to stabilize; Governor checks post-stabilization

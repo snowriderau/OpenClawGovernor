@@ -1,163 +1,72 @@
 # OpenClaw Governor Template
 
-**A spec-first framework for managing Linux infrastructure with Claude Code + OpenClaw**
+A template for running a structured Openclaw agent fleet on any machine. This repo holds specs, audit logs, security baselines, and feature progress — not application code. Application code and agent workspaces live on the machine itself.
 
----
+Run `scripts/init.sh` to configure this template for your environment.
 
-## What Is This?
+## Navigation
 
-The **Governor pattern** separates _oversight_ from _execution_. Instead of one monolithic AI agent doing everything, you run a hierarchy:
+### Product Context
+- [Problem & Goals](problem.md) — Security objectives and threat model
+- [Users & Roles](users.md) — Who accesses the system
+- [Requirements](requirements.md) — Security requirements and compliance
+- [Architecture](architecture.md) — System design and components
+- [Feature Map](feature_map.md) — All features and their status
 
-- A **Governor** (this repo) lives on your dev machine. It holds specs, tracks state, reviews work, and dispatches tasks.
-- **Agents** (OpenClaw) live on the target Linux machine. They execute tasks, run services, and report back.
+### Specifications
+- [Agent Registry](specs/AGENT_REGISTRY.md) — Full Openclaw fleet reference
+- [All specs](specs/) — Individual feature specs
 
-The Governor never runs code on the target directly. It SSHs in to read logs, verify output, and assign work. Agents never touch this repo. Clean separation, clear accountability.
+### Runtime State
+- [Active State](.agent/memory/active_state.md) — Current tasks and blockers
+- [Task Queue](.agent/memory/task_queue.md) — Prioritized work items
+- [Backlog](.agent/memory/backlog.md) — Future improvements
+- [Failure Log](.agent/memory/failures.md) — Issues and resolutions
 
----
+### Workflows (Governor Commands)
+- [Incident Response](.claude/commands/incident_response.md) — Handle security issues
+- [Machine Recovery](.claude/commands/machine_recovery.md) — Diagnose and recover from outages
+- [Patch Management](.claude/commands/patch_management.md) — System updates
+- [Security Audit](.claude/commands/security_audit.md) — Comprehensive system audit
 
 ## Quick Start
 
-```bash
-# 1. Clone the template
-git clone https://github.com/YOUR_ORG/OpenClawGovernor.git my-infra
-cd my-infra
+1. Clone this repo to your local machine
+2. Run `scripts/init.sh` to set up your environment and placeholders
+3. Tell your Governor what you need — it handles all agent configuration automatically
 
-# 2. Run the init script
-./scripts/init.sh
-
-# 3. Configure your environment
-cp .env.example .env
-# Edit .env with your host details, agent names, model preferences
-
-# 4. Set up SSH access to your target machine
-# The Governor communicates with agents over SSH
-
-# 5. Define your problem
-# Edit .agent/product/problem.md with your infrastructure goals
-```
-
----
-
-## Architecture Overview
+## Repo Structure
 
 ```
-┌─────────────────────────────────────────────────┐
-│  YOUR DEV MACHINE (Governor)                    │
-│                                                 │
-│  Claude Code ←→ This Repo                      │
-│    ├── specs/          (feature specs)          │
-│    ├── .agent/memory/  (state tracking)         │
-│    ├── .agent/product/ (architecture docs)      │
-│    └── CLAUDE.md       (workflow rules)         │
-│                                                 │
-│            │ SSH                                │
-│            ▼                                    │
-│  ┌─────────────────────────────────────┐        │
-│  │  TARGET MACHINE (Agents)            │        │
-│  │                                     │        │
-│  │  OpenClaw Runtime                   │        │
-│  │    ├── ops-commander (orchestrator) │        │
-│  │    ├── gpu-runner    (inference)    │        │
-│  │    ├── web-scout     (research)    │        │
-│  │    ├── deploy-chief  (CI/CD)       │        │
-│  │    └── alert-relay   (notifications)│       │
-│  └─────────────────────────────────────┘        │
-└─────────────────────────────────────────────────┘
+.agent/
+  memory/          # Active state, task queue, failures log
+.claude/
+  commands/        # Governor commands + workflows (slash commands)
+  mcp-lmstudio/    # MCP server for local inference integration
+  rules/           # Openclaw config reference
+  skills/          # Openclaw config skill
+specs/             # Feature specs and agent registry
+docs/              # Best practices, FAQ, architecture diagram
+scripts/           # Setup and initialization
+CLAUDE.md          # Project instructions and self-correction table
+architecture.md    # System design and components
+feature_map.md     # All features and their status
+problem.md         # Security objectives and threat model
+requirements.md    # Security requirements
+users.md           # Who accesses the system
 ```
 
-See `docs/architecture-diagram.svg` for the full visual.
+## Capabilities
 
----
-
-## Directory Structure
-
-```
-OpenClawGovernor/
-├── CLAUDE.md                    # Workflow rules, self-correction table
-├── README.md                    # This file
-├── .env.example                 # Environment variable template
-├── .gitignore
-├── LICENSE
-│
-├── .agent/
-│   ├── memory/
-│   │   ├── active_state.md      # Current task tracking
-│   │   └── failures.md          # Incident log and lessons
-│   ├── product/
-│   │   ├── architecture.md      # System architecture decisions
-│   │   ├── problem.md           # Problem definition
-│   │   ├── requirements.md      # Functional requirements
-│   │   ├── users.md             # User personas
-│   │   ├── agent_escalation_protocol.md  # Agent hierarchy rules
-│   │   └── specs/               # Individual feature specs
-│   └── workflows/
-│       ├── incident_response.md
-│       ├── machine_recovery.md
-│       ├── patch_management.md
-│       └── security_audit.md
-│
-├── .claude/
-│   └── rules/                   # Claude Code custom rules
-│
-├── docs/                        # Diagrams and reference docs
-│
-└── scripts/
-    └── init.sh                  # First-run setup script
-```
-
----
-
-## Agent Hierarchy
-
-The template ships with a professional agent hierarchy. Customize names and roles to fit your infrastructure.
-
-| Tier | Role | Default Name | Purpose |
-|------|------|-------------|---------|
-| Tier 1 | Orchestrator | `ops-commander` | Executive coordination, dispatches work to other agents |
-| Tier 2 | Security Auditor | `sec-sentinel` | Vulnerability scanning, compliance checks, CVE tracking |
-| Tier 2 | Deploy Manager | `deploy-chief` | CI/CD pipeline oversight, release management |
-| Tier 2 | Notification Hub | `alert-relay` | Routes alerts to Telegram, Slack, or other channels |
-| Tier 3 | GPU Worker | `gpu-runner` | Local inference, model serving, GPU resource management |
-| Tier 3 | Research Agent | `web-scout` | CVE research, documentation lookup, web data gathering |
-| Tier 3 | Log Analyzer | `log-parser` | Syslog parsing, anomaly detection, trend analysis |
-
-Tier 1 agents delegate to Tier 2. Tier 2 delegates to Tier 3. Escalation flows upward. See `.agent/product/agent_escalation_protocol.md` for full rules.
-
----
-
-## How To Use
-
-### 1. Define the Problem
-Edit `.agent/product/problem.md` with what your infrastructure needs to do.
-
-### 2. Write Specs First
-Before implementing anything, create a spec in `.agent/product/specs/`. A spec includes: goal, approach, acceptance criteria, rollback plan.
-
-### 3. Use Slash Commands
-- `/plan` — Enter plan mode for complex tasks
-- `/status` — Check agent state via SSH
-- `/audit` — Run a security or performance audit
-- `/deploy` — Trigger a deployment workflow
-
-### 4. Let the Governor Work
-The Governor reads `CLAUDE.md` rules automatically. It will plan before acting, verify before completing, and log lessons when corrected.
-
----
-
-## Design Principles
-
-1. **Spec-First Development** — Write the spec before writing the code. Reduces ambiguity, catches design issues early.
-
-2. **Approval-Gated Execution** — No system changes (packages, configs, services) without explicit user approval. Read-only by default.
-
-3. **Self-Correcting Memory** — Every mistake becomes a rule in `CLAUDE.md`. The system gets smarter over time without manual tuning.
-
-4. **Hierarchical Delegation** — Work flows downward through agent tiers. Escalation flows upward. No agent operates outside its tier without explicit override.
-
-5. **Separation of Concerns** — The Governor observes and directs. Agents execute. Code lives on the target machine. State lives in this repo.
-
----
+- **Openclaw Agent Fleet** — Autonomous agents with notification integration, delegation hierarchy, and local GPU inference
+- **Local LLM Serving** — LM Studio, Ollama, or vLLM with OpenAI-compatible API for on-device inference
+- **Autonomous Domain Agents** — Specialized agents for code, email, infrastructure, security, DevOps, and research workloads
+- **Agent Improvement Workflow** — Governor continuously reviews, fixes, and optimises agents (`/agent-improvement`)
+- **Security Baseline** — Automated audits, vulnerability scanning, hardening rules
+- **MCP LM Studio Server** — Model Context Protocol bridge to local models
+- **Notification Pipeline** — Agent-to-owner alerting via configurable channels
+- **Battle-Tested Workspace Examples** — Real production workspace files for [orchestrator](docs/workspace-examples/orchestrator-atlas/), [director](docs/workspace-examples/director-forge/), and [worker](docs/workspace-examples/worker-bolt/) tiers
 
 ## License
 
-See [LICENSE](LICENSE) for details.
+MIT

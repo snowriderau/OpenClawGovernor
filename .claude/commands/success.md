@@ -36,12 +36,12 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
    - Update "Next Up" section
    - Add to learnings if noteworthy
 
-## Step 4: Sync with OpenClaw Agents
+## Step 4: Sync with Openclaw
 
-If changes affect OpenClaw agents, restart relevant services:
-- Update workspace files (USER.md, IDENTITY.md, TOOLS.md, TASKS.md) if agent behavior changed
-- Restart gateway: `systemctl --user restart openclaw-gateway.service`
-- Verify with `openclaw health` or `openclaw status`
+If changes affect {{AGENT_MAIN}} (Openclaw):
+- Update workspace files (USER.md, IDENTITY.md, TOOLS.md, TASKS.md)
+- Restart relevant services
+- Verify: `~/.npm-global/bin/openclaw skills list` (if skill added)
 
 ## Step 5: Archive & Close
 

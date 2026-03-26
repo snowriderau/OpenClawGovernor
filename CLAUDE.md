@@ -1,6 +1,6 @@
-# OpenClaw Governor Template
+# OpenClaw Governor Repo
 
-Maintenance and governance layer for a Linux infrastructure managed by OpenClaw agents. This repo holds specs, audit logs, and operational state — not application code. Application code and agent workspaces live on the target machine.
+Maintenance and feature record for a machine running Openclaw agents. This repo holds specs, audit logs, and feature progress — not application code. Application code and agent workspaces live on the target machine.
 
 You are the oversight layer. Agents build their own projects. Your job: monitor, verify, unblock.
 
@@ -11,7 +11,7 @@ You are the oversight layer. Agents build their own projects. Your job: monitor,
 ### 1. Plan Mode Default
 - Enter plan mode for ANY non-trivial task (3+ steps or architectural decisions)
 - If something goes sideways, STOP and re-plan immediately
-- Write detailed specs upfront to `specs/` to reduce ambiguity
+- Write detailed specs to `specs/` before dispatching work — the Governor creates these, not the user
 
 ### 2. Subagent Strategy
 - Use subagents liberally to keep the main context window clean
@@ -49,7 +49,7 @@ You are the oversight layer. Agents build their own projects. Your job: monitor,
 
 ### Two Task Systems — Don't Confuse Them
 - **"What's next?" / "Check my tasks"** → `.agent/memory/active_state.md`
-- **"What's {{AGENT_MAIN}} doing?" / "Check the agents"** → SSH and read `TASKS.md` on the target machine
+- **"What's {{AGENT_MAIN}} doing?" / "Check the agents"** → SSH and read `TASKS.md` on the machine
 
 ---
 
@@ -58,7 +58,7 @@ You are the oversight layer. Agents build their own projects. Your job: monitor,
 - **Simplicity First:** Make every change as simple as possible
 - **No Laziness:** Find root causes, no temporary fixes. A workaround is not a feature — log it as temporary in `failures.md` with a removal condition.
 - **Minimal Impact:** Only touch what's necessary
-- **Approval Required:** Any system change (packages, configs, services) needs explicit user approval. Read-only by default.
+- **Autonomous Execution:** The Governor executes system changes (packages, configs, services) autonomously. The architecture — tiered agents with domain isolation — is the guardrail, not manual approval gates.
 
 ---
 
@@ -66,9 +66,14 @@ You are the oversight layer. Agents build their own projects. Your job: monitor,
 
 Every mistake becomes a rule. This file is a self-correcting system — it gets smarter every time something goes wrong.
 
+> This table grows over time. Every correction from the user becomes a new rule. Review at session start.
+
 | Date | What went wrong | Rule |
 |------|----------------|------|
-| YYYY-MM-DD | Example: Declared a service "working" without testing end-to-end from the client perspective | After any service setup, verify it works end-to-end before marking complete. Check logs, test from the client, confirm no firewall or config issues remain. |
+| YYYY-MM-DD | Declared a service "working" without testing end-to-end from the client perspective | After any service setup, verify it works end-to-end before marking complete. Check logs, test from the client, confirm no firewall or config issues remain. |
+| YYYY-MM-DD | Promoted a workaround to a completed feature without verifying the output quality | Verify output, not status. Workarounds are not features — log them as temporary in failures.md with a removal condition. |
+| YYYY-MM-DD | Kept editing one config section without checking related sections that control routing | When auditing agent config, check ALL relevant sections — not just the one you're editing. Bindings, tools, channels, and defaults must all be consistent. |
+| YYYY-MM-DD | Over-analysed one issue, wrote bloated rules instead of seeing the wider gap | Simplicity first. Step back before diving in. |
 
 ---
 
@@ -77,9 +82,9 @@ Every mistake becomes a rule. This file is a self-correcting system — it gets 
 | What | Where |
 |------|-------|
 | Feature specs & status | `specs/` and `feature_map.md` |
-| Governor's current work | `.agent/memory/active_state.md` |
+| Claude's current work | `.agent/memory/active_state.md` |
 | Failures & lessons | `.agent/memory/failures.md` |
 | Agent tasks | On the target machine — SSH to read |
 | Application code | On the target machine — never in this repo |
 | SSH reference & paths | `/linux-ref` skill |
-| OpenClaw config | `.claude/rules/openclaw.md` |
+| Openclaw config | `.claude/rules/openclaw.md` |

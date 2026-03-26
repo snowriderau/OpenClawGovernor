@@ -1,7 +1,7 @@
 # Incident Response Workflow
 
 ## Purpose
-Rapid identification, containment, and remediation of security incidents while preserving evidence and maintaining system availability.
+Rapid identification, containment, and remediation of security incidents while preserving evidence and maintaining system availability. All phases are Governor-driven. The owner is notified and consulted on high-stakes decisions, but does not execute steps directly.
 
 ## Incident Classification
 
@@ -37,21 +37,21 @@ Rapid identification, containment, and remediation of security incidents while p
 ## Incident Response Phases
 
 ### Phase 1: Detection & Validation (Minutes)
-Confirm the incident is real and understand its scope.
+Governor confirms the incident is real and understands its scope.
 
-**Actions:**
-1. Receive alert or report of suspicious activity
-2. Verify finding is not false positive
+**Automated Actions:**
+1. Receive alert from monitoring layer or agent report
+2. Verify finding is not a false positive
 3. Determine incident severity
 4. Identify affected systems/services
-5. Note exact time of discovery
+5. Record exact time of discovery in `failures.md`
 
-**Decision:** Proceed to Phase 2 or escalate if critical
+**Decision:** Proceed to Phase 2 or escalate to owner if critical
 
 ### Phase 2: Containment (Minutes to Hours)
-Limit damage and prevent spread without destroying evidence.
+Governor limits damage and prevents spread without destroying evidence.
 
-**Possible Actions (with approval):**
+**Possible Actions (CRITICAL requires owner approval, lower severities are autonomous):**
 - Disable compromised user account
 - Kill malicious process
 - Revoke suspicious SSH keys
@@ -65,10 +65,10 @@ Limit damage and prevent spread without destroying evidence.
 - Restart services prematurely
 - Overwrite memory/running processes
 
-**Output:** Containment action log
+**Output:** Containment action log written to `failures.md`
 
 ### Phase 3: Investigation (Hours to Days)
-Understand what happened and how.
+Governor investigates what happened and how.
 
 **Investigate:**
 - Timeline of events leading up to incident
@@ -82,13 +82,12 @@ Understand what happened and how.
 - Preserve suspicious files (hash/copy)
 - Capture network connections
 - Export relevant logs
-- Screenshot unusual states
 - Document system state
 
-**Output:** Incident investigation report
+**Output:** Incident investigation report delivered to owner
 
 ### Phase 4: Remediation (Hours to Days)
-Fix the underlying vulnerability and restore normal operation.
+Governor applies fixes and restores normal operation. Owner approves before execution.
 
 **Tasks:**
 1. Apply security patch if CVE exploited
@@ -99,12 +98,12 @@ Fix the underlying vulnerability and restore normal operation.
 6. Implement additional monitoring
 7. Harden configuration against recurrence
 
-**Approval:** Every remediation action must be approved
+**Approval:** Owner approves the remediation plan; Governor executes it
 
 **Output:** Remediation action log
 
 ### Phase 5: Recovery & Validation (Hours)
-Restore normal operations and verify system is secure.
+Governor restores normal operations and verifies the system is secure.
 
 **Actions:**
 1. Restore services to normal operation
@@ -119,12 +118,12 @@ Restore normal operations and verify system is secure.
 - [ ] No suspicious processes
 - [ ] Logs show normal activity
 - [ ] Performance baseline restored
-- [ ] Users can access resources
+- [ ] Agents can access resources
 
 **Output:** Recovery verification report
 
 ### Phase 6: Post-Incident Review (1-2 Days)
-Learn from incident to prevent future occurrences.
+Governor learns from the incident to prevent future occurrences.
 
 **Review:**
 1. Root cause analysis
@@ -133,8 +132,8 @@ Learn from incident to prevent future occurrences.
    - How was it exploited?
 
 2. Timeline review
-   - When should we have detected it?
-   - How fast did we respond?
+   - When should detection have fired?
+   - How fast was response?
    - What could be faster?
 
 3. Preventive measures
@@ -144,28 +143,28 @@ Learn from incident to prevent future occurrences.
    - Process improvements?
 
 4. Detection improvements
-   - Should we have caught this earlier?
+   - Should Governor have caught this earlier?
    - What log patterns indicate this attack?
-   - Add to automated detection?
+   - Add to automated detection rules?
 
-**Output:** Post-incident report with recommendations
+**Output:** Post-incident report with recommendations; Governor self-improves detection rules
 
 ## Decision Tree
 
 ```
-Incident Detected
-    |
+Incident Detected (by monitoring layer or agent)
+    ↓
 Is this confirmed? (Not false positive)
-    |-- NO -> Log as false positive, update detection rules
-    +-- YES -> Determine severity
-        |
+    ├─ NO → Governor logs as false positive, updates detection rules
+    └─ YES → Determine severity
+        ↓
 Is this CRITICAL?
-    |-- YES -> Immediate containment approval from owner
-    |       -> Escalate investigation
-    |       -> Begin remediation quickly
-    +-- NO -> Escalate to owner for decision
-        -> Owner decides on containment urgency
-        -> Proceed with investigation
+    ├─ YES → Governor immediately notifies owner
+    │       → Containment initiated; owner approval for invasive actions
+    │       → Investigation and remediation begin
+    └─ NO → Governor handles autonomously up to HIGH severity
+        → Owner receives daily report
+        → Governor proceeds with investigation
 ```
 
 ## Response Time Targets
@@ -177,11 +176,13 @@ Is this CRITICAL?
 
 ## Incident Report Template
 
+Governor populates this automatically:
+
 ```
 INCIDENT #XXX
 Date/Time: YYYY-MM-DD HH:MM:SS
 Severity: [CRITICAL / HIGH / MEDIUM / LOW]
-Reporter: [Who found it]
+Detected By: [Governor monitoring layer / agent report]
 
 DESCRIPTION
 What happened?
@@ -189,7 +190,7 @@ What happened?
 IMPACT
 - Affected systems:
 - Affected data:
-- User impact:
+- Agent impact:
 - Downtime: (if any)
 
 TIMELINE
@@ -209,7 +210,7 @@ REMEDIATION
 - Preventive measures:
 
 LESSONS LEARNED
-- What we did well:
+- What went well:
 - What could be better:
 - Process improvements:
 ```
@@ -237,12 +238,12 @@ LESSONS LEARNED
 ## Communication
 
 ### Internal Logging
-- All incidents recorded in `.agent/memory/failures.md`
+- All incidents recorded automatically in `.agent/memory/failures.md`
 - Evidence preserved for audit trail
 - Decision log maintained
 
 ### To System Owner
-- CRITICAL: Immediate notification + brief status
+- CRITICAL: Immediate Telegram notification + brief status
 - Updates every 30 minutes during active incident
 - Final report within 24 hours of resolution
 
@@ -254,14 +255,14 @@ LESSONS LEARNED
 
 ## Tools & Resources
 
-**Investigation Tools:**
+**Investigation Tools (Governor-executed):**
 - System logs (auth.log, syslog)
 - Process monitoring (ps, top, systemd-journal)
 - Network analysis (netstat, ss, tcpdump)
 - File integrity checking (find, stat, md5sum)
 - String searching (grep, strings)
 
-**Remediation Tools:**
+**Remediation Tools (Governor-executed, owner-approved):**
 - Package managers (apt, yum)
 - User management (useradd, passwd, sudoers)
 - Firewall (ufw, iptables)
@@ -270,12 +271,12 @@ LESSONS LEARNED
 
 ## Incident Prevention
 
-Best practices to reduce incident likelihood:
-1. Keep system patches current
-2. Monitor logs regularly
-3. Maintain strong access controls
-4. Regular security audits
-5. Backup critical data
-6. Implement host-based IDS (Auditd)
-7. Educate users on security
-8. Test incident procedures
+Best practices Governor enforces continuously:
+1. Keep system patches current via patch_management workflow
+2. Monitor logs automatically via scheduled audits
+3. Maintain strong access controls, audited regularly
+4. Regular security audits via security_audit workflow
+5. Backup critical data automatically
+6. Host-based IDS (Auditd) monitored by Governor
+7. Governor audits agent behavior for anomalous patterns
+8. Incident procedures are tested and improved automatically after each incident

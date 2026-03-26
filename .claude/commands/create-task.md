@@ -36,9 +36,8 @@ Before doing any work, update `.agent/memory/active_state.md`:
 ## Step 4: Do the Task
 
 Execute the task using the spec context. Follow the operating principles in `CLAUDE.md`:
-- Read-only operations need no approval
-- System changes require explicit approval before executing
-- Keep changes minimal and targeted — only what the task requires
+- Execute autonomously — the architecture (tiered agents, domain isolation) is the guardrail
+- Keep changes targeted — only what the task requires
 
 ## Step 5: Post-Completion Check
 
