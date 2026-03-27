@@ -1,5 +1,7 @@
 # Workspace Examples
 
+> For initial setup, see [INSTALL.md](../../INSTALL.md).
+
 These are example workspace files based on a real production OpenClaw deployment. Copy and customize for your agents. The Governor creates and maintains these — you never write them manually.
 
 ---
@@ -9,6 +11,7 @@ These are example workspace files based on a real production OpenClaw deployment
 | Directory | Agent | Role |
 |-----------|-------|------|
 | `orchestrator-atlas/` | Atlas | Orchestrator / Executive Assistant — the hub of your fleet |
+| `director-pm/` | PM | Process Manager — enforces spec-driven dev, dispatches agents, manages project lifecycle |
 | `director-forge/` | Forge | Senior Engineer — builds, fixes, and ships |
 | `worker-bolt/` | Bolt | Compute Worker — local GPU, execute-and-return |
 
@@ -56,3 +59,7 @@ These examples use a standard 8-agent layout. Adapt names and roles to your setu
 | `{{NAS_HOST}}` | Your NAS IP or hostname |
 | `{{INFERENCE_API}}` | Local inference server URL |
 | `{{AGENT_EMAIL}}` | Dedicated email address for the agent |
+| `{{PROJECTS_DIR}}` | Path to projects directory on target machine |
+| `{{ENGINEER_AGENT}}` | Agent ID for code/pipeline work (PM dispatches to) |
+| `{{RESEARCH_AGENT}}` | Agent ID for web research (PM dispatches to) |
+| `{{LOCAL_AGENT}}` | Agent ID for local ops/GPU tasks (PM dispatches to) |

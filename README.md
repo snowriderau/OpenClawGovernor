@@ -1,100 +1,154 @@
-# OpenClaw Governor Template
+# OpenClaw Governor
 
-Run an autonomous AI agent fleet on your own machine. You do the thinking, the robots do the work.
+You describe what you want. The Governor builds it, deploys it, fixes it, and learns from every failure.
 
-## What is this?
+---
 
-This template sets up **OpenClaw** — an open-source framework for running persistent AI agents on your hardware — with a **Governor** layer that oversees, improves, and manages the entire fleet. You never touch config files. You just tell the Governor what you need.
+## The Problem
 
-The Governor (Claude Code, Codex, or any coding AI agent you like) sits separately from the agent fleet. It monitors agents, fixes issues, deploys new ones, and writes corrective rules when things go wrong. The system gets smarter every time something fails.
+Getting one OpenClaw agent running is easy. Getting a reliable fleet? That's where everyone gets stuck. You configure agents, hit a wall, lose track of what you did and why, start over, and repeat. One model trying to plan, research, code, debug, and communicate isn't an agent — it's a burnout simulator with a token bill.
 
-Your agents talk to you via Telegram, Slack, or Discord. When you want to change or improve the system, you talk to the Governor. That's it.
+Three things fix it:
 
-**Any hardware. Any GPU. Any OS.** Raspberry Pi to server rack — the architecture is the same.
+1. **Spec-first development** — every change starts with a written spec, not "just build it"
+2. **Multi-agent hierarchy** — give your agent agents. An executive that thinks, specialists that own domains, workers that grind
+3. **Separation** — the Governor sits outside your OpenClaw runtime. It manages the fleet without being part of it
 
-> New here? Read the [FAQ](docs/faq.md) for the full picture.
+This template gives you all three out of the box.
 
-## Quick Start
+---
 
-### Don't have OpenClaw yet?
+## Setup
 
 ```bash
-# Install OpenClaw
+# Install OpenClaw if you haven't
 curl -fsSL https://www.openclaw.ai/install.sh | bash
 
-# Enterprise security? Add NemoClaw (optional — OpenClaw + NVIDIA sandbox + Privacy Router)
-curl -fsSL https://www.nvidia.com/nemoclaw.sh | bash
-```
-
-### Already have OpenClaw installed?
-
-```bash
-# 1. Clone the Governor template
+# Clone this template
 git clone https://github.com/snowriderau/OpenClawGovernor.git
 cd OpenClawGovernor
 
-# 2. Run the setup wizard — configures everything
+# Run the setup wizard — it asks you questions, configures everything
 bash scripts/init.sh
 
-# 3. Open your Governor (Claude Code or preferred coding agent)
-#    Tell it: "Set up my agent fleet using this template"
+# Open your Governor (Claude Code, Codex, Antigravity — whatever you use)
+claude
 ```
 
-The Governor handles everything from there — agent config, workspace files, systemd services, the lot.
+The Governor reads its instructions on startup. It reads `INSTALL.md` to bootstrap your fleet. You don't configure anything manually.
 
-## How it works
+---
 
-**Three tiers, domain-locked agents, no single point of failure:**
+## What You Actually Do
 
-| Tier | Role | Example |
-|------|------|---------|
-| **Orchestrator** | Coordinates the fleet, talks to you, never executes | Atlas |
-| **Directors** | Own a domain (code, email, projects), can dispatch workers | Forge, Hermes, Conductor |
-| **Workers** | Execute tasks, don't know WHY, data never leaves the machine | Bolt (local GPU), Scout, Courier, Sentinel |
+You talk to the Governor using commands. That's it. The commands trigger spec-driven workflows — the Governor writes specs, you approve them, it builds and deploys.
 
-No single agent has the full picture AND the full toolkit. The orchestrator sees everything but can't execute. Workers execute but don't know the broader goal. This is the security model — architecture, not restrictions.
+```
+You: "I need my agents to handle email"
+
+  /new-feature email-handling
+    → Governor writes a spec
+    → You review and approve (or ask for changes)
+    → Governor implements — config, workspace files, agent deployment
+    → Governor runs /success — commits, updates the feature map, documents what it learned
+```
+
+### Core commands
+
+| Command | What you say | What happens |
+|---------|-------------|-------------|
+| `/new-feature` | "I need X" | Governor writes a spec, you approve, it builds it |
+| `/create-task` | "Fix Y" or "Add Z to the email agent" | Governor finds the relevant spec, does the work, updates status |
+| `/update-feature` | "Change how X works" | Governor reads the existing spec, plans changes, implements |
+| `/agent-improvement` | "Check on the agents" | Governor audits the fleet — logs, tools, permissions, gaps — and fixes what's broken |
+| `/success` | (Governor runs this itself) | Commits everything, updates the feature map, syncs OpenClaw, writes lessons |
+
+### Maintenance commands
+
+| Command | What it does |
+|---------|-------------|
+| `/security_audit` | Reviews permissions, configs, vulnerabilities, recommends fixes |
+| `/patch_management` | Checks for updates, assesses risk, applies with rollback plan |
+| `/incident_response` | Detects, isolates, preserves evidence, logs everything |
+| `/machine_recovery` | Restores from backup, reconfigures, verifies |
+
+### The rule
+
+No code without a spec. No completion without `/success`. If the Governor skips steps — correct it. Every correction becomes a permanent rule in its self-correction table. It won't make the same mistake twice.
+
+---
+
+## How It Works
+
+The Governor sits on your dev machine (or wherever you run Claude Code / Codex / Antigravity). It SSHs into your OpenClaw machine to manage everything.
+
+**Your OpenClaw fleet runs in three tiers:**
+
+| Tier | Job | They can | They can't |
+|------|-----|----------|------------|
+| **Orchestrator** | Coordinates everything, talks to you | See all agents, delegate work | Execute anything directly |
+| **Directors** | Own a domain (code, email, projects) | Dispatch workers, make decisions | See other directors' domains |
+| **Workers** | Execute tasks on local GPU / tools | Run fast, handle data | Know why they're doing it |
+
+No single agent has the full picture AND the full toolkit. The orchestrator sees everything but can't execute. Workers execute but don't see the bigger picture. That's the security model — it's architecture, not permissions.
+
+The Governor sits above all of this. It writes the config, deploys the agents, reviews what's working, and fixes what isn't.
 
 <p align="center">
-  <img src="docs/architecture-diagram.svg" alt="OpenClaw Governor architecture — four tiers: Governor (oversight, separate machine), Orchestrator (Atlas), Directors (Conductor, Forge, Hermes), Workers (Bolt, Scout, Courier, Sentinel)" width="100%">
+  <img src="docs/architecture-diagram.svg" alt="OpenClaw Governor architecture" width="100%">
 </p>
 
-> Architecture details: [full SVG](docs/architecture-diagram.svg) | [agent registry](specs/AGENT_REGISTRY.md)
+---
 
-## What the Governor does for you
+## What If the Governor Seems Lost?
 
-- **Deploys agents** — "I need an agent for email triage" → Governor builds it, configures workspace files, sets up spawn rules
-- **Fixes agents** — agent failing? Governor reads logs, identifies the issue, adds missing tools, rewrites instructions
-- **Writes all config** — you never touch `openclaw.json` or workspace files. Governor writes them.
-- **Creates specs automatically** — say "new feature: backup to NAS" and the Governor writes the spec, dispatches agents, tracks progress
-- **Runs security audits** — weekly automated review of agent permissions, system state, and recommendations
-- **Self-corrects** — every mistake becomes a permanent rule in `CLAUDE.md`. The system learns from failures.
-
-## What's in this repo
-
-This repo is the Governor's workspace — not application code. Application code and agent workspaces live on the target machine.
+Give it a specific command. Instead of "set up my system," say:
 
 ```
-CLAUDE.md              # Governor instructions + self-correction table
-feature_map.md         # All features and their status
-specs/                 # Feature specs and agent registry
-.agent/memory/         # Runtime state (tasks, backlog, failures)
-.claude/commands/      # Governor commands (/agent-improvement, /new-feature, etc.)
-.claude/skills/        # OpenClaw config reference (the crown jewel)
-docs/                  # Best practices, FAQ, workspace examples
-scripts/               # Setup and initialization
+/new-feature openclaw-setup
+/agent-improvement
+/create-task "fix the watchdog timer"
 ```
 
-## Key resources
+The commands activate structured workflows. The Governor follows them step-by-step. If it goes off-script, correct it — the correction becomes a permanent rule.
 
-| What | Where |
-|------|-------|
-| Full FAQ | [docs/faq.md](docs/faq.md) |
-| Best practices | [docs/best-practices.md](docs/best-practices.md) |
-| Workspace file examples | [docs/workspace-examples/](docs/workspace-examples/) |
+If you're starting fresh after `init.sh`, the Governor will read `INSTALL.md` automatically and bootstrap your fleet. You just approve what it proposes.
+
+---
+
+## What's In This Repo
+
+This is the Governor's workspace — not application code. Your apps and agent workspaces live on the target machine.
+
+```
+CLAUDE.md              # Governor's brain — instructions + self-correction table
+INSTALL.md             # Bootstrap sequence the Governor executes after init.sh
+feature_map.md         # Every feature and its status
+specs/                 # Written specs for every feature
+.agent/memory/         # Governor's working memory (tasks, backlog, failures)
+.claude/commands/      # The slash commands (/new-feature, /agent-improvement, etc.)
+.claude/skills/        # OpenClaw and NemoClaw config reference
+docs/                  # FAQ, best practices, agent and project examples
+scripts/               # Setup wizard
+```
+
+| Resource | Location |
+|----------|----------|
+| FAQ | [docs/faq.md](docs/faq.md) |
+| Best practices & operational knowledge | [docs/best-practices.md](docs/best-practices.md) |
+| Agent workspace examples | [docs/workspace-examples/](docs/workspace-examples/) |
+| Spec-first project template | [docs/project-examples/spec-first-starter/](docs/project-examples/) |
 | Agent registry | [specs/AGENT_REGISTRY.md](specs/AGENT_REGISTRY.md) |
-| Escalation protocol | [agent_escalation_protocol.md](agent_escalation_protocol.md) |
-| Feature map | [feature_map.md](feature_map.md) |
-| Architecture | [architecture.md](architecture.md) |
+
+---
+
+## The Point
+
+The agents aren't impressive because they're AI. They're impressive because they're organised.
+
+This template captures everything — the architecture, the workflows, the failures, the rules — so you skip the trial and error and start with a system that works.
+
+You focus on what you want your agents to do. The Governor handles how.
 
 ## License
 

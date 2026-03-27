@@ -1,5 +1,7 @@
 # scripts/examples/
 
+> For initial setup, see [INSTALL.md](../../INSTALL.md).
+
 Example scripts and systemd units based on a real deployment. The Governor copies, customizes, and deploys these — you don't touch them directly.
 
 ## How It Works

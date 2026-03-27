@@ -69,6 +69,18 @@ This template ships with a set of reference features demonstrating the OpenClaw 
 - [ ] At least one successful test backup completed
 - [ ] Restore procedure tested
 
+### Project Management & Spec-Driven Development
+- [ ] Projects directory created on target machine (`{{PROJECTS_DIR}}`)
+- [ ] Spec-first-starter template deployed to `{{PROJECTS_DIR}}/spec-first-starter/`
+- [ ] PM agent workspace deployed to `{{PROJECTS_DIR}}/_pm/`
+- [ ] PM agent configured in openclaw.json with heartbeat (scans projects every 30m)
+- [ ] PM agent workspace files personalized: IDENTITY.md, SOUL.md, TOOLS.md, TASKS.md, HEARTBEAT.md
+- [ ] PM agent oriented to spec-first-starter template (knows to scaffold new projects from it)
+- [ ] At least one project initialized with spec-first structure (`.agent/product/`, `.agent/memory/`, `.agent/workflows/`)
+- [ ] PM agent successfully scans project task queues and dispatches agents
+- [ ] `/discovery` workflow tested on a new project
+- [ ] `/new_feature` → `/success` cycle completed end-to-end on a managed project
+
 ---
 
 ## Agent Fleet Management

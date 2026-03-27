@@ -1,79 +1,55 @@
-# OpenClaw Governor Repo
+# OpenClaw Governor — Template Development Mode
 
-Maintenance and feature record for a machine running Openclaw agents. This repo holds specs, audit logs, and feature progress — not application code. Application code and agent workspaces live on the target machine.
+You are working on the OpenClaw Governor **template repository**. This is NOT a deployed instance. There is no live machine, no running agents, no active fleet.
 
-You are the oversight layer. Agents build their own projects. Your job: monitor, verify, unblock.
+Your job: improve the template — specs, docs, scripts, commands, skills, and architecture.
 
 ---
 
-## Workflow Orchestration
+## What This Repo Is
+
+A template that anyone can clone and deploy to run an autonomous agent fleet with a Governor oversight layer. When someone runs `scripts/init.sh`, placeholders get replaced with real values and `CLAUDE_template.md` becomes the active `CLAUDE.md` — activating the Governor persona.
+
+## Template vs Deployed
+
+| | Template (you are here) | Deployed (after init.sh) |
+|---|---|---|
+| `CLAUDE.md` | This file — template dev instructions | Governor persona from `CLAUDE_template.md` |
+| `{{PLACEHOLDERS}}` | Present in files | Replaced with real values |
+| `.env` | Does not exist | Generated with machine config |
+| Agents | Don't exist | Running on target machine |
+
+---
+
+## Workflow
 
 ### 1. Plan Mode Default
 - Enter plan mode for ANY non-trivial task (3+ steps or architectural decisions)
-- If something goes sideways, STOP and re-plan immediately
-- Write detailed specs to `specs/` before dispatching work — the Governor creates these, not the user
+- Write specs to `specs/` before building features
 
 ### 2. Subagent Strategy
-- Use subagents liberally to keep the main context window clean
-- Offload research, exploration, and parallel analysis to subagents
+- Use subagents to keep the main context clean
 - One task per subagent for focused execution
 
 ### 3. Self-Improvement Loop
-- After ANY correction from the user: update the Lessons table below
-- Write rules for yourself that prevent the same mistake
-- Review lessons at session start for relevant context
+- After ANY correction: update the Lessons table in `CLAUDE_template.md`
+- Template lessons improve every future deployment
 
 ### 4. Verification Before Done
-- Never mark a task complete without proving it works
-- Run the system, check logs, read actual output — not just status fields
-- Ask: "Would a staff engineer approve this?"
+- For scripts: test they parse and run
+- For specs: verify they reference correct file paths and placeholders
+- For docs: ensure accuracy against current repo state
 
-### 5. Demand Elegance
-- For non-trivial changes, pause and ask "is there a more elegant way?"
-- If a fix feels hacky: implement the elegant solution instead
-- Skip this for simple, obvious fixes — don't over-engineer
-
-### 6. Autonomous Bug Fixing
-- When given a bug report: just fix it, no hand-holding needed
-- Go fix failing systems without being told how
-- Escalate only when blocked (needs sudo, missing dependency, user decision)
+### 5. Placeholder Discipline
+- Use `{{UPPER_SNAKE_CASE}}` for all environment-specific values
+- Every placeholder must have a matching prompt in `scripts/init.sh`
+- Check `scripts/init.sh` when adding new placeholders
 
 ---
 
-## Task Management
+## Local Reference (optional)
 
-- Write plan to `.agent/memory/active_state.md` with checkable items
-- Check in before starting implementation
-- Mark items complete as you go
-- Add lessons after corrections to the table below
-
-### Two Task Systems — Don't Confuse Them
-- **"What's next?" / "Check my tasks"** → `.agent/memory/active_state.md`
-- **"What's {{AGENT_MAIN}} doing?" / "Check the agents"** → SSH and read `TASKS.md` on the machine
-
----
-
-## Core Principles
-
-- **Simplicity First:** Make every change as simple as possible
-- **No Laziness:** Find root causes, no temporary fixes. A workaround is not a feature — log it as temporary in `failures.md` with a removal condition.
-- **Minimal Impact:** Only touch what's necessary
-- **Autonomous Execution:** The Governor executes system changes (packages, configs, services) autonomously. The architecture — tiered agents with domain isolation — is the guardrail, not manual approval gates.
-
----
-
-## Self-Correction
-
-Every mistake becomes a rule. This file is a self-correcting system — it gets smarter every time something goes wrong.
-
-> This table grows over time. Every correction from the user becomes a new rule. Review at session start.
-
-| Date | What went wrong | Rule |
-|------|----------------|------|
-| YYYY-MM-DD | Declared a service "working" without testing end-to-end from the client perspective | After any service setup, verify it works end-to-end before marking complete. Check logs, test from the client, confirm no firewall or config issues remain. |
-| YYYY-MM-DD | Promoted a workaround to a completed feature without verifying the output quality | Verify output, not status. Workarounds are not features — log them as temporary in failures.md with a removal condition. |
-| YYYY-MM-DD | Kept editing one config section without checking related sections that control routing | When auditing agent config, check ALL relevant sections — not just the one you're editing. Bindings, tools, channels, and defaults must all be consistent. |
-| YYYY-MM-DD | Over-analysed one issue, wrote bloated rules instead of seeing the wider gap | Simplicity first. Step back before diving in. |
+If `.env.governor` exists, it contains local paths to a prod OpenClaw setup you can reference for ideas and patterns. This file is gitignored.
 
 ---
 
@@ -81,10 +57,12 @@ Every mistake becomes a rule. This file is a self-correcting system — it gets 
 
 | What | Where |
 |------|-------|
+| Governor persona template | `CLAUDE_template.md` |
 | Feature specs & status | `specs/` and `feature_map.md` |
-| Claude's current work | `.agent/memory/active_state.md` |
+| Agent memory templates | `.agent/memory/` |
 | Failures & lessons | `.agent/memory/failures.md` |
-| Agent tasks | On the target machine — SSH to read |
-| Application code | On the target machine — never in this repo |
-| SSH reference & paths | `/linux-ref` skill |
-| Openclaw config | `.claude/rules/openclaw.md` |
+| Setup wizard | `scripts/init.sh` |
+| OpenClaw config rules | `.claude/rules/openclaw.md` |
+| Governor commands | `.claude/commands/` |
+| Governor skills | `.claude/skills/` |
+| Local reference paths | `.env.governor` (gitignored) |

@@ -24,6 +24,48 @@ Absolutely. The Governor can be any capable coding AI agent — Claude Code, Cod
 
 ---
 
+## Working with the Governor
+
+### What commands do I use?
+
+Everything runs through Governor commands. These trigger spec-driven workflows — you don't manually edit specs, config, or workspace files.
+
+| Command | What happens |
+|---------|-------------|
+| `/new-feature` | Governor writes a spec, you approve it, Governor implements, runs `/success` |
+| `/create-task` | Governor matches to existing feature, executes, updates status |
+| `/update-feature` | Governor reads existing spec, plans changes, implements, runs `/success` |
+| `/agent-improvement` | Governor audits fleet — finds gaps, fixes issues, improves workspace files |
+| `/success` | Governor commits, updates feature map, syncs OpenClaw, documents learnings |
+| `/security_audit` | Full security review of permissions, configs, and vulnerabilities |
+| `/patch_management` | Check for updates, assess risk, apply with rollback |
+| `/incident_response` | Rapid detection, isolation, evidence preservation |
+| `/machine_recovery` | Restore from backup, reconfigure, verify |
+
+**The rule:** no code without a spec, no completion without `/success`. Every piece of work follows this pattern. The Governor enforces it automatically.
+
+### How does spec-driven development work?
+
+You describe what you need. The Governor handles everything else:
+
+1. You say "I need a backup system"
+2. Governor runs `/new-feature backup` — writes `specs/FEAT-BACKUP.md`
+3. You approve the spec (or ask for changes)
+4. Governor implements per the spec
+5. Governor runs `/success` — commits, updates `feature_map.md`, documents learnings
+
+This cycle applies to everything — infrastructure, agents, security, maintenance. The Governor writes specs, you approve or redirect, agents execute, and the system self-documents.
+
+For projects managed by the agent fleet, the same pattern applies via the spec-first-starter template (see [project examples](../docs/project-examples/)). The PM agent enforces this across all managed projects.
+
+### What if the Governor seems lost or isn't following the workflow?
+
+Give it a specific command. Instead of "set up my system," say `/new-feature openclaw-setup` or `/agent-improvement`. The commands activate structured workflows that the Governor follows step-by-step.
+
+If the Governor skips the spec step or tries to implement without approval, correct it — "write the spec first" or "run /new-feature." Every correction gets added to the self-correction table in `CLAUDE.md`, so it won't make the same mistake twice.
+
+---
+
 ## Setup and Configuration
 
 ### How do I connect the Governor to my machine via SSH?

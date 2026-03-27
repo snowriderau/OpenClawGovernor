@@ -252,6 +252,21 @@ if [[ -z "${OPENCLAW_REPO:-}" ]]; then
 fi
 
 # ---------------------------------------------------------------------------
+# Section 13: Governor Agent
+# ---------------------------------------------------------------------------
+header "13. Governor Agent"
+echo
+info "Which coding agent will you use as the Governor?"
+info "  1) Claude Code       — reads CLAUDE.md automatically"
+info "  2) Codex             — reads CLAUDE.md automatically"
+info "  3) Antigravity       — load folder as workspace"
+info "  4) Cursor            — add CLAUDE.md to Rules for AI"
+info "  5) Windsurf          — reads CLAUDE.md automatically"
+info "  6) Other"
+echo
+ask GOVERNOR_AGENT "Governor agent" "${GOVERNOR_AGENT:-Claude Code}"
+
+# ---------------------------------------------------------------------------
 # Write .env file
 # ---------------------------------------------------------------------------
 header "Writing .env"
@@ -318,6 +333,9 @@ NEMOCLAW_REPO="${NEMOCLAW_REPO:-}"
 
 # OpenClaw repo location
 OPENCLAW_REPO="${OPENCLAW_REPO:-}"
+
+# Governor agent
+GOVERNOR_AGENT="${GOVERNOR_AGENT}"
 EOF
 
 ok ".env written to ${ENV_FILE}"
@@ -406,6 +424,77 @@ do_replace "SSH_KEY_PATH" "$SSH_KEY_PATH"
 ok "Replaced tokens in ${REPLACEMENT_COUNT} file(s)."
 
 # ---------------------------------------------------------------------------
+# Activate Governor persona
+# ---------------------------------------------------------------------------
+header "Activating Governor mode"
+
+if [[ -f "${REPO_ROOT}/CLAUDE_template.md" ]]; then
+  # Preserve the template-editing CLAUDE.md so it's still accessible
+  cp "${REPO_ROOT}/CLAUDE.md" "${REPO_ROOT}/CLAUDE_dev.md"
+  # Activate Governor persona (token replacement already applied to CLAUDE_template.md)
+  cp "${REPO_ROOT}/CLAUDE_template.md" "${REPO_ROOT}/CLAUDE.md"
+  ok "CLAUDE.md now contains Governor instructions"
+  info "Template-editing instructions saved as CLAUDE_dev.md"
+else
+  warn "CLAUDE_template.md not found — CLAUDE.md unchanged"
+fi
+
+# ---------------------------------------------------------------------------
+# Deploy spec-first-starter and PM workspace to target machine
+# ---------------------------------------------------------------------------
+header "Deploying project templates to target machine"
+
+SSH_TARGET="${USERNAME}@${HOSTNAME}"
+if [[ -n "${TAILSCALE_IP:-}" ]]; then
+  SSH_TARGET="${USERNAME}@${TAILSCALE_IP}"
+elif [[ -n "${LAN_IP:-}" ]]; then
+  SSH_TARGET="${USERNAME}@${LAN_IP}"
+fi
+
+SSH_CMD="ssh"
+if [[ -n "${SSH_KEY_PATH:-}" ]]; then
+  SSH_CMD="ssh -i ${SSH_KEY_PATH}"
+fi
+
+# Test SSH connectivity
+if $SSH_CMD "$SSH_TARGET" "echo ok" &>/dev/null; then
+  ok "SSH connection to ${SSH_TARGET} verified"
+
+  # Create projects directory if it doesn't exist
+  $SSH_CMD "$SSH_TARGET" "mkdir -p '${PROJECTS_DIR}'" 2>/dev/null
+  ok "Projects directory: ${PROJECTS_DIR}"
+
+  # Deploy spec-first-starter template
+  if [[ -d "${REPO_ROOT}/docs/project-examples/spec-first-starter" ]]; then
+    if $SSH_CMD "$SSH_TARGET" "test -d '${PROJECTS_DIR}/spec-first-starter'" 2>/dev/null; then
+      info "spec-first-starter already exists on target — skipping (delete to re-deploy)"
+    else
+      rsync -az --exclude='.git' \
+        "${REPO_ROOT}/docs/project-examples/spec-first-starter/" \
+        "${SSH_TARGET}:${PROJECTS_DIR}/spec-first-starter/"
+      ok "Deployed spec-first-starter template to ${PROJECTS_DIR}/spec-first-starter/"
+    fi
+  fi
+
+  # Deploy PM workspace scaffold
+  if $SSH_CMD "$SSH_TARGET" "test -d '${PROJECTS_DIR}/_pm'" 2>/dev/null; then
+    info "PM workspace already exists on target — skipping"
+  else
+    $SSH_CMD "$SSH_TARGET" "mkdir -p '${PROJECTS_DIR}/_pm/.agent/memory'"
+    # Copy PM workspace files from examples
+    if [[ -d "${REPO_ROOT}/docs/workspace-examples/director-pm" ]]; then
+      rsync -az \
+        "${REPO_ROOT}/docs/workspace-examples/director-pm/" \
+        "${SSH_TARGET}:${PROJECTS_DIR}/_pm/"
+      ok "Deployed PM workspace to ${PROJECTS_DIR}/_pm/"
+    fi
+  fi
+else
+  warn "Could not SSH to ${SSH_TARGET} — skipping remote deployment"
+  info "You can deploy templates manually later. See INSTALL.md Step 6."
+fi
+
+# ---------------------------------------------------------------------------
 # Post-setup checks
 # ---------------------------------------------------------------------------
 header "Post-setup checks"
@@ -446,6 +535,8 @@ fi
 echo "  ${BOLD}GPU:${RESET}       ${GPU}"
 echo "  ${BOLD}Models:${RESET}    ${PRIMARY_MODEL} (cloud) | ${LOCAL_MODEL} (local)"
 echo "  ${BOLD}Ports:${RESET}     inference :${INFERENCE_PORT}  gateway :${GATEWAY_PORT}"
+echo "  ${BOLD}Governor:${RESET}  ${GOVERNOR_AGENT}"
+echo "  ${BOLD}Projects:${RESET}  ${PROJECTS_DIR}"
 if [[ "$USE_TELEGRAM" == true ]]; then
   echo "  ${BOLD}Telegram:${RESET}  ${TELEGRAM_BOT} → ${TELEGRAM_USER_ID}"
 fi
@@ -453,14 +544,47 @@ echo
 
 echo "  ${BOLD}Next steps:${RESET}"
 echo "  1. Review .env and verify all values are correct"
-echo "  2. Open your Governor (Claude Code or preferred coding agent)"
-echo "  3. Tell it: 'Set up OpenClaw on my machine using this template'"
-echo "  4. The Governor handles everything from there — agent config,"
-echo "     workspace files, systemd services, the lot."
-echo ""
-echo "  ${BOLD}Governor commands available:${RESET}"
-echo "  /new-feature         — Add a new capability"
-echo "  /agent-improvement   — Review and fix agent issues"
-echo "  /create-task         — Execute a task against an existing feature"
-echo "  /security_audit      — Run a security audit"
+echo "  2. Read ${CYAN}INSTALL.md${RESET} for the full setup walkthrough"
+echo
+
+# Tailored Governor launch instructions
+case "${GOVERNOR_AGENT}" in
+  "Claude Code"|"claude code"|"claude")
+    echo "  3. Launch your Governor:"
+    echo "     ${CYAN}cd $(basename "$REPO_ROOT") && claude${RESET}"
+    ;;
+  "Codex"|"codex")
+    echo "  3. Launch your Governor:"
+    echo "     ${CYAN}cd $(basename "$REPO_ROOT") && codex${RESET}"
+    ;;
+  "Antigravity"|"antigravity")
+    echo "  3. Open Antigravity and load this folder as your workspace"
+    ;;
+  "Cursor"|"cursor")
+    echo "  3. Open this folder in Cursor"
+    echo "     Add CLAUDE.md to Settings > Rules for AI"
+    ;;
+  "Windsurf"|"windsurf")
+    echo "  3. Open this folder in Windsurf"
+    ;;
+  *)
+    echo "  3. Point your coding agent at this repo and ensure it reads CLAUDE.md"
+    ;;
+esac
+
+echo
+echo "  4. Tell it: ${CYAN}Read INSTALL.md and set up my agent fleet${RESET}"
+echo
+echo "  ${BOLD}Core workflow commands:${RESET}"
+echo "  /new-feature <name>  — Write spec, get approval, implement, finalize"
+echo "  /create-task <task>  — Execute a task against an existing feature"
+echo "  /update-feature      — Modify an existing feature"
+echo "  /agent-improvement   — Audit and fix the agent fleet"
+echo "  /success             — Commit, update docs, sync OpenClaw"
+echo
+echo "  ${BOLD}Maintenance commands:${RESET}"
+echo "  /security_audit      — Full security review"
+echo "  /patch_management    — Check and apply patches"
+echo "  /incident_response   — Handle active incidents"
+echo "  /machine_recovery    — Restore from backup"
 echo
