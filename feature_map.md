@@ -1,11 +1,11 @@
 # Features Map
 
-This template ships with a set of reference features demonstrating the OpenClaw Governor architecture. All checkboxes start unchecked — Governor configures everything for your installation.
+All features and their status. Governor updates this file after every change.
 
 ## Core Components
 
 ### Local Inference Server ([spec](./specs/FEAT-LOCAL_INFERENCE.md))
-- [ ] Running on port 1234 (OpenAI-compatible API)
+- [ ] Running on port {{INFERENCE_PORT}} (OpenAI-compatible API)
 - [ ] GPU inference configured (see spec for GPU options)
 - [ ] Models downloaded to {{MODEL_DIR}}
 - [ ] systemd user service (`local-inference.service`) — active + enabled
@@ -15,40 +15,35 @@ This template ships with a set of reference features demonstrating the OpenClaw 
 ### Openclaw Agent ([spec](./specs/FEAT-OPENCLAW_setup.md))
 - [ ] Installed at `~/.openclaw/`, binary available on PATH
 - [ ] Config validated (valid JSON, no syntax errors)
-- [ ] Eight agents configured per AGENT_REGISTRY: Atlas, Conductor, Forge, Hermes, Bolt, Scout, Courier, Sentinel
-- [ ] Notification channel configured (groupPolicy: allowlist, only Atlas has message tool)
+- [ ] Agent fleet configured — see `fleet.md` for hierarchy and roster
+- [ ] Notification channel configured (groupPolicy: allowlist, only {{AGENT_MAIN}} has message tool)
 - [ ] Web search provider connected
 - [ ] Local inference connected ({{LOCAL_MODEL}})
 - [ ] systemd user service (`openclaw-gateway.service`) — active + enabled
 - [ ] loginctl linger enabled (starts at boot without login)
 - [ ] Sudoers rules installed (`/etc/sudoers.d/openclaw-agent`)
 - [ ] `tools.elevated.allowFrom` consolidated at global level
-- [ ] Workspace files populated: USER.md, IDENTITY.md, TOOLS.md, HEARTBEAT.md, TASKS.md, OPS.md
-- [ ] Memory backend installed and seeded
-- [ ] Heartbeat: Atlas 30m → notification channel (delegation-first), Conductor 60m → internal
-- [ ] Security audit: denyCommands configured, exec approvals set appropriately
-- [ ] Inter-agent dispatch routing configured (see AGENT_REGISTRY.md)
+- [ ] Workspace files populated: USER.md, IDENTITY.md, TOOLS.md, HEARTBEAT.md, TASKS.md
+- [ ] Heartbeat: {{AGENT_MAIN}} 30m → notification channel, PM 60m → internal
+- [ ] Fleet-wide heartbeat isolation: `isolatedSession: true` + `lightContext: true`
+- [ ] Security: denyCommands configured, exec approvals set appropriately
+- [ ] Inter-agent dispatch routing configured — see `fleet.md` spawn permissions
 - [ ] Browser: headless mode enabled
-- [ ] Skills enabled: coding-agent, github, gh-issues, session-logs, healthcheck
 - [ ] GitHub CLI installed and authenticated
-- [ ] Dead model fallbacks cleaned (remove any unauthenticated provider references)
 
-### NemoClaw Enterprise Security ([spec](./specs/FEAT-NEMOCLAW_setup.md)) — Optional
-- [ ] NemoClaw installed (OpenClaw + NVIDIA OpenShell + Privacy Router)
-- [ ] OpenShell runtime installed
-- [ ] First sandbox created and verified
-- [ ] Network policy applied (default-deny + required egress whitelisted)
-- [ ] Privacy Router configured (PII/code/financial → local Nemotron, non-sensitive → cloud)
-- [ ] Inference credentials stored in gateway (not visible to agents)
-- [ ] Audit logging verified
-- [ ] Governor can create/destroy/manage sandboxes via SSH
-- [ ] Per-agent sandbox policies written (domain-locked egress per agent role)
+### heartbeat-guard Plugin ([spec](./specs/FEAT-020_heartbeat_guard/SPEC.md))
+- [ ] Plugin installed at `~/.openclaw/plugins/heartbeat-guard/`
+- [ ] Registered in openclaw.json plugins.entries
+- [ ] Heartbeat tool calls capped at 10 per run
+- [ ] Cron tool calls capped at 30 per run
+- [ ] User-triggered sessions unlimited (-1)
+- [ ] Blocked events logged to `~/.openclaw/logs/heartbeat-guard.log`
+- [ ] Gateway restarted and plugin active (`openclaw plugins list`)
 
 ### Remote Access
 - [ ] Tailscale active on server ({{TAILSCALE_IP}})
 - [ ] Client machine connected to Tailscale
 - [ ] SSH config entries: `ssh {{HOSTNAME}}` (Tailscale) / `ssh {{HOSTNAME}}-lan` (LAN)
-- [ ] SSH key auth configured for any secondary machines (e.g. NAS)
 
 ### Docker Host ([spec](./specs/FEAT-DOCKER.md))
 - [ ] Docker latest stable + Compose plugin installed
@@ -61,7 +56,6 @@ This template ships with a set of reference features demonstrating the OpenClaw 
 - [ ] Openclaw has built-in `Restart=always` in its service
 - [ ] Health check script installed
 - [ ] systemd timer (5-min checks)
-- [ ] HTTP status endpoint
 
 ### Backup ([spec](./specs/backup_setup.md))
 - [ ] NAS or external storage destination configured
@@ -72,14 +66,10 @@ This template ships with a set of reference features demonstrating the OpenClaw 
 ### Project Management & Spec-Driven Development
 - [ ] Projects directory created on target machine (`{{PROJECTS_DIR}}`)
 - [ ] Spec-first-starter template deployed to `{{PROJECTS_DIR}}/spec-first-starter/`
-- [ ] PM agent workspace deployed to `{{PROJECTS_DIR}}/_pm/`
-- [ ] PM agent configured in openclaw.json with heartbeat (scans projects every 30m)
-- [ ] PM agent workspace files personalized: IDENTITY.md, SOUL.md, TOOLS.md, TASKS.md, HEARTBEAT.md
-- [ ] PM agent oriented to spec-first-starter template (knows to scaffold new projects from it)
-- [ ] At least one project initialized with spec-first structure (`.agent/product/`, `.agent/memory/`, `.agent/workflows/`)
+- [ ] PM agent configured in openclaw.json with heartbeat (scans projects every 60m)
+- [ ] PM agent workspace files personalized: IDENTITY.md, SOUL.md, TOOLS.md, HEARTBEAT.md
+- [ ] At least one project initialized with spec-first structure
 - [ ] PM agent successfully scans project task queues and dispatches agents
-- [ ] `/discovery` workflow tested on a new project
-- [ ] `/new_feature` → `/success` cycle completed end-to-end on a managed project
 
 ---
 
@@ -90,97 +80,14 @@ This template ships with a set of reference features demonstrating the OpenClaw 
 - **Command:** `/agent-improvement`
 - **Status:** Active — continuous improvement cycle
 
-The Governor's most frequent operational task. Covers the full lifecycle of keeping agents effective:
-
-- [ ] Tool gap analysis — agents missing tools they need, or using tools that don't exist in their runtime
-- [ ] Permission and spawn rule verification — can each agent reach who it needs to?
-- [ ] Workspace file quality — IDENTITY.md, TOOLS.md, SOUL.md populated with real environment data (not templates)
-- [ ] Model optimization — right model for the workload (local for simple/sensitive, cloud for reasoning)
+Key areas:
+- [ ] Tool gap analysis — agents missing tools or using tools that don't exist
+- [ ] Spawn rule verification — agents reach who they need to
+- [ ] Workspace file quality — populated with real environment data (not templates)
+- [ ] Model optimization — right model for the workload
 - [ ] Heartbeat configuration — producing useful output, not just HEARTBEAT_OK
-- [ ] Escalation chain verification — end-to-end message path works (agent → Atlas → notification channel)
-- [ ] Context rot detection — agents accumulating cross-domain knowledge they shouldn't have
-- [ ] New agent recommendations — "you're doing X manually, an agent could handle this"
-- [ ] Weekly audit schedule established
-- [ ] Lessons captured in CLAUDE.md self-correction table after each cycle
+- [ ] Escalation chain verification — end-to-end message path works
+- [ ] Governance audit cron active on PM (every 6h)
 
-The self-correction loop is the key: every time an agent fails or underperforms, the Governor fixes it AND writes a rule so it doesn't happen again. The system gets smarter with every failure.
-
-See `docs/workspace-examples/` for battle-tested workspace file templates based on a real production deployment.
-
----
-
-## Security & Maintenance
-
-### Priority 1: Core Security Hygiene
-- [ ] Initial system audit baseline
-- [ ] Automated vulnerability scanning
-- [ ] Regular patch assessment
-- [ ] Critical CVE alerting
-- [ ] Basic access control audit
-
-## Priority 2: Maintenance Automation
-- [ ] Weekly security check workflow (cron: weekly)
-- [ ] Patch staging and testing
-- [ ] Configuration compliance checking
-- [ ] Log analysis and reporting
-- [ ] Incident playbook execution
-
-## Priority 3: Hardening & Best Practices
-- [ ] CIS Benchmark alignment
-- [ ] Firewall rule management
-- [ ] SSH hardening
-- [ ] Service auditing
-- [ ] Permission auditing
-
-## Priority 4: Monitoring & Response
-- [ ] Real-time log monitoring
-- [ ] Anomaly detection
-- [ ] Alert aggregation
-- [ ] Incident tracking
-- [ ] Evidence preservation
-
-## Priority 5: Compliance & Documentation
-- [ ] Audit trail maintenance
-- [ ] Policy documentation
-- [ ] Remediation tracking
-- [ ] Compliance reports
-- [ ] Decision logging
-
----
-
-## Feature Specifications
-
-### Vulnerability Scanning
-**Status:** Spec TBD
-**Owner:** Governor (Claude Code) or designated security agent
-**Triggers:** Weekly, or on-demand
-**Inputs:** Installed packages, OS version
-**Outputs:** Vulnerability report with severity
-
-### Patch Management
-**Status:** Spec TBD
-**Owner:** Governor (with agent execution)
-**Triggers:** Weekly check, on-demand
-**Inputs:** Available updates
-**Outputs:** Patch recommendations, approval workflow
-
-### Access Control Audit
-**Status:** Spec TBD
-**Owner:** Governor
-**Triggers:** Weekly
-**Inputs:** /etc/passwd, /etc/sudoers
-**Outputs:** Access audit report
-
-### Log Monitoring
-**Status:** Spec TBD
-**Owner:** Governor
-**Triggers:** Continuous/daily
-**Inputs:** System logs
-**Outputs:** Alerts, anomaly reports
-
-### Incident Response
-**Status:** Spec TBD
-**Owner:** Governor (with user notification for decisions requiring human judgment)
-**Triggers:** Automated alert or user-initiated
-**Inputs:** Security event details
-**Outputs:** Incident log, remediation steps
+See `fleet.md` for hierarchy, spawn rules, and model assignments.
+See `docs/workspace-examples/` for battle-tested workspace file templates.

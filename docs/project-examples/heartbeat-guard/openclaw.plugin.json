@@ -1,0 +1,44 @@
+{
+  "id": "heartbeat-guard",
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "limits": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "heartbeat": {
+            "type": "object",
+            "properties": {
+              "maxToolCalls": { "type": "integer" },
+              "maxTokens": { "type": "integer" }
+            }
+          },
+          "cron": {
+            "type": "object",
+            "properties": {
+              "maxToolCalls": { "type": "integer" },
+              "maxTokens": { "type": "integer" }
+            }
+          },
+          "user": {
+            "type": "object",
+            "properties": {
+              "maxToolCalls": { "type": "integer" },
+              "maxTokens": { "type": "integer" }
+            }
+          },
+          "default": {
+            "type": "object",
+            "properties": {
+              "maxToolCalls": { "type": "integer" },
+              "maxTokens": { "type": "integer" }
+            }
+          }
+        }
+      },
+      "log": { "type": "boolean" }
+    }
+  }
+}

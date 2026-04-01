@@ -38,7 +38,7 @@ Look for these categories:
 | **Model mismatch** | Cloud model doing local data work, cheap model doing complex reasoning | Swap model assignment |
 | **Heartbeat issues** | Not configured, or producing no useful output | Write/rewrite HEARTBEAT.md with actionable checklist |
 | **Context rot** | Agent accumulating cross-domain knowledge | Clear session, tighten IDENTITY.md scope |
-| **Escalation failures** | Agent not escalating to Atlas when blocked | Fix sessions_spawn config, update SOUL.md |
+| **Escalation failures** | Agent not escalating to {{AGENT_MAIN}} when blocked | Fix sessions_spawn config, update SOUL.md |
 
 ## Phase 3: Fix
 
@@ -52,9 +52,8 @@ For each issue:
 ## Phase 4: Document
 
 - Update `feature_map.md` with what changed
-- Add lessons to `CLAUDE.md` self-correction table
-- Update `agent_escalation_protocol.md` if spawn rules changed
-- Update `specs/AGENT_REGISTRY.md` if agent config changed
+- Update `fleet.md` if spawn rules or agent table changed
+- Write or update a rule in `.claude/rules/` if a pattern of failure is identified
 
 ## Phase 5: Recommendations
 
@@ -64,7 +63,7 @@ After fixing immediate issues, look ahead:
 - **Tool changes** — add based on actual usage, remove tools that generate warnings
 - **Schedule follow-up** — agent improvement is a continuous cycle, not a one-time task
 
-The self-correction table in CLAUDE.md captures lessons from each cycle. The system gets smarter every time an agent fails or underperforms.
+Lessons become rules in `.claude/rules/` — not table entries. The system gets smarter every time an agent fails or underperforms.
 
 ---
 

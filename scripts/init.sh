@@ -251,6 +251,8 @@ if [[ -z "${OPENCLAW_REPO:-}" ]]; then
   info "Skipped — Governor will use docs.openclaw.ai for reference."
 fi
 
+ask OPENCLAW_PLUGIN_PATH "OpenClaw plugins directory" "${OPENCLAW_PLUGIN_PATH:-/home/${USERNAME}/.openclaw/plugin}"
+
 # ---------------------------------------------------------------------------
 # Section 13: Governor Agent
 # ---------------------------------------------------------------------------
@@ -333,6 +335,7 @@ NEMOCLAW_REPO="${NEMOCLAW_REPO:-}"
 
 # OpenClaw repo location
 OPENCLAW_REPO="${OPENCLAW_REPO:-}"
+OPENCLAW_PLUGIN_PATH="${OPENCLAW_PLUGIN_PATH:-}"
 
 # Governor agent
 GOVERNOR_AGENT="${GOVERNOR_AGENT}"
@@ -580,11 +583,7 @@ echo "  /new-feature <name>  — Write spec, get approval, implement, finalize"
 echo "  /create-task <task>  — Execute a task against an existing feature"
 echo "  /update-feature      — Modify an existing feature"
 echo "  /agent-improvement   — Audit and fix the agent fleet"
-echo "  /success             — Commit, update docs, sync OpenClaw"
 echo
 echo "  ${BOLD}Maintenance commands:${RESET}"
-echo "  /security_audit      — Full security review"
-echo "  /patch_management    — Check and apply patches"
-echo "  /incident_response   — Handle active incidents"
-echo "  /machine_recovery    — Restore from backup"
+echo "  /security-audit      — Full security review"
 echo

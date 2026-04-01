@@ -2,7 +2,7 @@
 
 You are working on the OpenClaw Governor **template repository**. This is NOT a deployed instance. There is no live machine, no running agents, no active fleet.
 
-Your job: improve the template — specs, docs, scripts, commands, skills, and architecture.
+Your job: improve the template — specs, docs, scripts, commands, rules, skills, and architecture.
 
 ---
 
@@ -32,8 +32,8 @@ A template that anyone can clone and deploy to run an autonomous agent fleet wit
 - One task per subagent for focused execution
 
 ### 3. Self-Improvement Loop
-- After ANY correction: update the Lessons table in `CLAUDE_template.md`
-- Template lessons improve every future deployment
+- After ANY correction: write or update a rule in `.claude/rules/`
+- Do NOT maintain a self-correction table — rules prevent mistakes, tables record them
 
 ### 4. Verification Before Done
 - For scripts: test they parse and run
@@ -49,7 +49,7 @@ A template that anyone can clone and deploy to run an autonomous agent fleet wit
 
 ## Local Reference (optional)
 
-If `.env.governor` exists, it contains local paths to a prod OpenClaw setup you can reference for ideas and patterns. This file is gitignored.
+If `.env.governor` exists, it contains local paths to a prod OpenClaw setup you can reference for ideas and patterns. This file is gitignored. SSH to the machine and read directly.
 
 ---
 
@@ -59,10 +59,13 @@ If `.env.governor` exists, it contains local paths to a prod OpenClaw setup you 
 |------|-------|
 | Governor persona template | `CLAUDE_template.md` |
 | Feature specs & status | `specs/` and `feature_map.md` |
-| Agent memory templates | `.agent/memory/` |
-| Failures & lessons | `.agent/memory/failures.md` |
+| Agent fleet template | `fleet.md` |
+| Active state template | `active_state.md` |
+| Governance ledger template | `governance-ledger.md` |
 | Setup wizard | `scripts/init.sh` |
 | OpenClaw config rules | `.claude/rules/openclaw.md` |
+| Process rules | `.claude/rules/process.md` |
+| Boundary rules | `.claude/rules/governor-boundary.md` |
 | Governor commands | `.claude/commands/` |
 | Governor skills | `.claude/skills/` |
 | Local reference paths | `.env.governor` (gitignored) |

@@ -1,0 +1,11 @@
+{
+  "name": "openclaw-plugin-heartbeat-guard",
+  "version": "1.0.0",
+  "description": "Circuit breaker for runaway heartbeat and cron tool loops",
+  "type": "module",
+  "openclaw": {
+    "extensions": [
+      "./index.js"
+    ]
+  }
+}

@@ -45,20 +45,27 @@ SSH to the target machine and set up the foundation.
 
 ### 2.3 Agent Fleet
 ```
-1. Read specs/AGENT_REGISTRY.md for the 8-agent fleet layout
+1. Read fleet.md for the agent hierarchy, models, and spawn rules
 2. Verify agents are configured: ~/.npm-global/bin/openclaw agents list
 3. Deploy workspace files from docs/workspace-examples/ for each agent
-4. Verify heartbeat is working for autonomous agents (Atlas, Conductor)
+4. Enable fleet-wide heartbeat isolation: isolatedSession: true + lightContext: true
+5. Verify {{AGENT_MAIN}} heartbeat is working and reaching notification channel
 ```
 
-### 2.4 PM Agent
+### 2.4 heartbeat-guard Plugin
+```
+1. Verify plugin exists at ~/.openclaw/plugins/heartbeat-guard/
+2. If missing, build from specs/FEAT-020_heartbeat_guard/ (BUILD_REQUIREMENTS.md has steps)
+3. Register in openclaw.json plugins.entries (see SPEC.md for config schema)
+4. Restart gateway and verify: openclaw plugins list
+5. Check ~/.openclaw/logs/heartbeat-guard.log after first heartbeat runs
+```
+
+### 2.5 PM Agent
 ```
 1. Verify {{PROJECTS_DIR}}/_pm/ exists with workspace files
-2. Ensure PM agent is configured in openclaw.json
-3. PM must know:
-   - Where the spec-first-starter template lives: {{PROJECTS_DIR}}/spec-first-starter/
-   - Where to scan for projects: {{PROJECTS_DIR}}/
-   - How to dispatch agents: sessions_spawn
+2. Ensure PM agent is configured in openclaw.json with 60m heartbeat
+3. PM must know where to scan for projects: {{PROJECTS_DIR}}/
 4. Test PM heartbeat: does it scan projects and report status?
 ```
 
@@ -66,9 +73,7 @@ SSH to the target machine and set up the foundation.
 
 ## Phase 3: Validate Spec-Driven Workflow
 
-The spec-driven workflow is the core of this system. Verify it works end-to-end.
-
-### Governor commands — these are how ALL work happens
+The trinity commands are how ALL work happens:
 
 | Command | What it does | When to use |
 |---------|-------------|-------------|
@@ -76,11 +81,7 @@ The spec-driven workflow is the core of this system. Verify it works end-to-end.
 | `/create-task` | Match to existing feature → execute → update status | Work against existing spec |
 | `/update-feature` | Read existing spec → plan changes → implement → `/success` | Modify existing capability |
 | `/agent-improvement` | Audit fleet → find gaps → fix → document | Regular maintenance |
-| `/success` | Commit → update feature_map → sync OpenClaw → document | After completing any work |
-| `/security_audit` | Full security review | Scheduled or on-demand |
-| `/patch_management` | Check updates → assess → apply with rollback | Scheduled or on-demand |
-| `/incident_response` | Detect → isolate → preserve evidence → log | Active incidents |
-| `/machine_recovery` | Restore from backup → reconfigure → verify | After failures |
+| `/security-audit` | Full security review | Scheduled or on-demand |
 
 ### Verify the loop works
 ```
@@ -95,68 +96,42 @@ The spec-driven workflow is the core of this system. Verify it works end-to-end.
 
 ## Phase 4: Project Management Setup
 
-### How projects work on this system
-
-Every project lives in `{{PROJECTS_DIR}}` on the target machine. Every project uses the spec-first-starter structure:
+Every project lives in `{{PROJECTS_DIR}}` on the target machine using the spec-first-starter structure:
 
 ```
 project-name/
-  CLAUDE.md                         # Project instructions + self-correction
+  CLAUDE.md                         # Project instructions
   .agent/
-    product/                        # problem.md, users.md, requirements.md, architecture.md, feature_map.md, specs/
-    memory/                         # active_state.md, task_queue.md, backlog.md, failures.md
-    workflows/                      # discovery.md, new_feature.md, update_feature.md, loop.md, success.md
-    skills/                         # Reusable agent knowledge
+    product/                        # problem.md, feature_map.md, specs/
+    memory/                         # active_state.md, task_queue.md
+    workflows/                      # discovery.md, new_feature.md, success.md
 ```
 
 ### Creating a new project
 ```
 1. mkdir {{PROJECTS_DIR}}/<project-name>
 2. cp -r {{PROJECTS_DIR}}/spec-first-starter/.agent {{PROJECTS_DIR}}/<project-name>/
-3. cp {{PROJECTS_DIR}}/spec-first-starter/CLAUDE.md {{PROJECTS_DIR}}/<project-name>/
-4. cd {{PROJECTS_DIR}}/<project-name> && git init && git add -A && git commit -m "init: spec-first scaffold"
-5. Run /discovery on the new project to initialize product definition
-6. Add to PM agent's TASKS.md managed projects table
+3. cd {{PROJECTS_DIR}}/<project-name> && git init && git add -A && git commit -m "init: spec-first scaffold"
+4. Add to PM agent's managed projects
 ```
-
-### PM agent's role
-
-The PM agent enforces spec-driven development across all managed projects:
-
-- Scans `task_queue.md` across `{{PROJECTS_DIR}}/*/` every heartbeat
-- Spawns agents for implementation work with clear instructions
-- Ensures no code is written without a spec
-- Catches gaps: missing specs, stale task queues, unclaimed work
-- Reports meaningful progress to the orchestrator
-- Scaffolds new projects from `{{PROJECTS_DIR}}/spec-first-starter/` when needed
 
 ---
 
 ## Phase 5: Ongoing Operations
 
-After setup is complete, the Governor's daily work follows these patterns:
-
 ### Regular maintenance
 ```
-/agent-improvement     — Weekly audit of agent fleet
-/security_audit        — Weekly security review
-/patch_management      — Weekly patch check
-```
-
-### Feature work (spec-driven, always)
-```
-/new-feature <name>    — New capability: spec → approve → implement → /success
-/create-task <task>    — Execute against existing feature
-/update-feature <name> — Evolve existing feature
+/agent-improvement   — Weekly audit of agent fleet
+/security-audit      — Periodic security review
 ```
 
 ### Repo maintenance rules (non-negotiable)
 ```
 1. feature_map.md stays current — every change updates this file
-2. .agent/memory/active_state.md always tracks current work
-3. Specs before code — /new-feature writes a spec BEFORE implementation
+2. active_state.md always tracks current work (root, under 50 lines)
+3. Specs before implementation — /new-feature writes a spec BEFORE building
 4. /success is mandatory after completing any feature work
-5. Self-correction table in CLAUDE.md is updated after every user correction
+5. Corrections become rules in .claude/rules/ — not table entries
 6. Never let the user manually edit config — the Governor writes all config
 ```
 
@@ -167,9 +142,7 @@ After setup is complete, the Governor's daily work follows these patterns:
 | What | Where |
 |------|-------|
 | Feature roadmap | `feature_map.md` |
-| Architecture | `architecture.md` |
-| Agent fleet layout | `specs/AGENT_REGISTRY.md` |
-| Agent hierarchy | `agent_escalation_protocol.md` |
+| Agent fleet | `fleet.md` |
 | Workspace examples | `docs/workspace-examples/` |
 | Project template | `docs/project-examples/spec-first-starter/` |
 | Operational best practices | `docs/best-practices.md` |

@@ -1,42 +1,32 @@
 ---
-description: Implement a new maintenance feature (backup, watchdog, hardening, etc.)
+description: Architect and build a new feature — plugins, config tools, governance tooling, or dispatch app features through PM.
 ---
 
-# New Feature Workflow
+# New Feature
 
-Implement a new maintenance feature following spec-first approach.
+Build something new. System/infra features → Governor builds directly. Application features → write spec, dispatch through PM.
 
 ## Phase 1: Understand
 
-1. **Read the specs:**
-   - Check `specs/` — does a spec already exist?
-   - Check `feature_map.md` — what's in scope?
-   - Read `requirements.md` — constraints and dependencies
+1. Check `feature_map.md` — does this already exist? If so → `/update-feature`
+2. Check `specs/` — is there a spec already?
+3. Determine scope: **system** (plugin, config, monitoring) or **application** (user-facing app feature)
 
-2. **Check task queue:**
-   - Is this in `.agent/memory/task_queue.md`?
-   - Any blockers in `.agent/memory/failures.md`?
+## Phase 2: Design
 
-## Phase 2: Design (NO CODING YET)
+1. Enter plan mode for non-trivial features
+2. Write spec at `specs/FEAT-XXX_<name>.md`
+3. Add entry to `feature_map.md` with spec link
+4. Get approval before implementation
 
-1. **Mock the behavior** — what does this feature do? What's the step-by-step workflow?
-2. **Define requirements** — what data/tools/permissions are needed?
-3. **Write the spec** — copy `specs/_TEMPLATE_spec.md` to a new file:
-   ```
-   specs/FEAT-XXX_<name>.md
-   ```
-4. **Update feature map** — add entry with spec link and status
-5. **Get approval** before writing any code
+**Application features:** Spec is the deliverable. PM dispatches agents to build it.
+**System features:** Proceed to Phase 3.
 
-## Phase 3: Implement
+## Phase 3: Implement (system features only)
 
-1. **Follow operational rules** — read `architecture.md`
-2. **Create checkpoint:**
-   ```bash
-   git add -A && git commit -m "checkpoint: before FEAT-XXX_<name>"
-   ```
-3. **Implement per spec** — follow spec tasks and acceptance criteria
-4. **Test on the machine** — verify via SSH
+1. Record in `active_state.md` → Current Task
+2. Follow implementation pipeline: implement → validate → verify
+3. Show evidence that it works (logs, test output, config readback)
 
 ## Phase 4: Finalize
 
@@ -44,4 +34,4 @@ Run `/success` to commit, update docs, and wrap up.
 
 ---
 
-The feature to implement: $ARGUMENTS
+The feature: $ARGUMENTS
