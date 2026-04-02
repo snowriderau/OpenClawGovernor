@@ -492,6 +492,30 @@ if $SSH_CMD "$SSH_TARGET" "echo ok" &>/dev/null; then
       ok "Deployed PM workspace to ${PROJECTS_DIR}/_pm/"
     fi
   fi
+
+  # Deploy guard plugins to ~/.openclaw/plugins/
+  if [[ -d "${REPO_ROOT}/plugins" ]]; then
+    header "Deploying guard plugins"
+    $SSH_CMD "$SSH_TARGET" "mkdir -p ~/.openclaw/plugins" 2>/dev/null
+
+    for plugin_dir in "${REPO_ROOT}"/plugins/*/; do
+      plugin_name="$(basename "$plugin_dir")"
+      # Skip README.md (not a plugin directory)
+      [[ ! -f "${plugin_dir}/package.json" ]] && continue
+
+      if $SSH_CMD "$SSH_TARGET" "test -f ~/.openclaw/plugins/${plugin_name}/package.json" 2>/dev/null; then
+        info "${plugin_name} already deployed — skipping (delete to re-deploy)"
+      else
+        rsync -az --exclude='test' \
+          "${plugin_dir}" \
+          "${SSH_TARGET}:~/.openclaw/plugins/${plugin_name}/"
+        ok "Deployed ${plugin_name} to ~/.openclaw/plugins/${plugin_name}/"
+      fi
+    done
+
+    info "Plugins deployed. Register them in openclaw.json plugins.entries."
+    info "See plugins/README.md for config examples."
+  fi
 else
   warn "Could not SSH to ${SSH_TARGET} — skipping remote deployment"
   info "You can deploy templates manually later. See INSTALL.md Step 6."
