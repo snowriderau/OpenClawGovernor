@@ -37,5 +37,6 @@ Governor (you)
 | `active_state.md` | Current task + machine context (kept under 50 lines) |
 | `governance-ledger.md` | Audit trail + violations + work-in-flight |
 | `specs/` | Feature specifications |
+| `plugins/` | Guard plugins: heartbeat-guard, announce-guard, role-guard |
 | `.claude/rules/` | Process enforcement (auto-loaded every session) |
 | `.claude/commands/` | The trinity: `/create-task`, `/new-feature`, `/update-feature` |

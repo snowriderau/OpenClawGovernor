@@ -1,0 +1,10 @@
+{
+  "name": "openclaw-plugin-role-guard",
+  "version": "1.0.0",
+  "description": "Deterministic role enforcement — blocks file writes for coordinator agents",
+  "type": "module",
+  "license": "MIT",
+  "engines": { "node": ">=20.0.0" },
+  "files": ["index.js", "openclaw.plugin.json"],
+  "openclaw": { "extensions": ["./index.js"] }
+}

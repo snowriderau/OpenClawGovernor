@@ -62,10 +62,14 @@ If `.env.governor` exists, it contains local paths to a prod OpenClaw setup you 
 | Agent fleet template | `fleet.md` |
 | Active state template | `active_state.md` |
 | Governance ledger template | `governance-ledger.md` |
+| Guard plugins (source) | `plugins/` (heartbeat-guard, announce-guard, role-guard) |
 | Setup wizard | `scripts/init.sh` |
 | OpenClaw config rules | `.claude/rules/openclaw.md` |
 | Process rules | `.claude/rules/process.md` |
 | Boundary rules | `.claude/rules/governor-boundary.md` |
+| Auth philosophy | `.claude/rules/auth-by-role.md` |
+| Copy policy | `.claude/rules/local-copy-policy.md` |
+| Service management | `.claude/rules/systemd-only.md` |
 | Governor commands | `.claude/commands/` |
 | Governor skills | `.claude/skills/` |
 | Local reference paths | `.env.governor` (gitignored) |

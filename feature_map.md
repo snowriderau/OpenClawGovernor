@@ -31,14 +31,32 @@ All features and their status. Governor updates this file after every change.
 - [ ] Browser: headless mode enabled
 - [ ] GitHub CLI installed and authenticated
 
-### heartbeat-guard Plugin ([spec](./specs/FEAT-020_heartbeat_guard/SPEC.md))
-- [ ] Plugin installed at `~/.openclaw/plugins/heartbeat-guard/`
+### heartbeat-guard Plugin ([spec](./specs/FEAT-020_heartbeat_guard/SPEC.md) | [source](./plugins/heartbeat-guard/))
+- [ ] Plugin deployed from `plugins/heartbeat-guard/` to `~/.openclaw/plugins/heartbeat-guard/`
 - [ ] Registered in openclaw.json plugins.entries
 - [ ] Heartbeat tool calls capped at 10 per run
 - [ ] Cron tool calls capped at 30 per run
 - [ ] User-triggered sessions unlimited (-1)
 - [ ] Blocked events logged to `~/.openclaw/logs/heartbeat-guard.log`
 - [ ] Gateway restarted and plugin active (`openclaw plugins list`)
+
+### announce-guard Plugin ([source](./plugins/announce-guard/))
+- [ ] Plugin deployed from `plugins/announce-guard/` to `~/.openclaw/plugins/announce-guard/`
+- [ ] Registered in openclaw.json plugins.entries
+- [ ] Guarded agents configured (default: `main` coordinator)
+- [ ] Subagent announce noise suppressed via `::silent::` system prompt override
+- [ ] Gateway restarted and plugin active
+
+### role-guard Plugin ([source](./plugins/role-guard/))
+- [ ] Plugin deployed from `plugins/role-guard/` to `~/.openclaw/plugins/role-guard/`
+- [ ] Registered in openclaw.json plugins.entries
+- [ ] Guarded agents configured (default: `main` coordinator)
+- [ ] `opsAgent` and `projectAgent` set to match your fleet's delegation targets
+- [ ] File write tools blocked for coordinator agents (write, edit, apply_patch)
+- [ ] Exec write patterns blocked (redirect, tee, sed -i, cp, mv, mkdir, touch, rm)
+- [ ] Role guidance injected into system prompt via `before_prompt_build`
+- [ ] Alerts written to `/tmp/openclaw-governor-alerts.jsonl` on block
+- [ ] Gateway restarted and plugin active
 
 ### Remote Access
 - [ ] Tailscale active on server ({{TAILSCALE_IP}})

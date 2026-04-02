@@ -56,10 +56,12 @@ export default definePluginEntry({
       }
     }
 
+    // Resolve run key: prefer runId, fall back to sessionKey
     function runKey(ctx) {
       return ctx.runId || ctx.sessionKey || "unknown";
     }
 
+    // Detect trigger from session key pattern (fallback)
     function inferTrigger(sessionKey) {
       if (!sessionKey) return "default";
       if (sessionKey.includes(":heartbeat:")) return "heartbeat";
@@ -69,6 +71,7 @@ export default definePluginEntry({
       return "default";
     }
 
+    // --- Hook 1: Capture trigger type and init counters ---
     api.on("before_agent_start", (_event, ctx) => {
       const key = runKey(ctx);
       const trigger = ctx.trigger || inferTrigger(ctx.sessionKey);
@@ -82,6 +85,7 @@ export default definePluginEntry({
       log(`[start] run=${key} agent=${ctx.agentId} trigger=${trigger}`);
     });
 
+    // --- Hook 2: Accumulate token usage ---
     api.on("llm_output", (event, ctx) => {
       const key = runKey(ctx);
       const entry = runs.get(key);
@@ -92,6 +96,7 @@ export default definePluginEntry({
       }
     });
 
+    // --- Hook 3: Circuit breaker ---
     api.on("before_tool_call", (event, ctx) => {
       const key = runKey(ctx);
       const entry = runs.get(key);
@@ -100,6 +105,7 @@ export default definePluginEntry({
       entry.toolCalls++;
       const limits = getLimits(entry.trigger);
 
+      // -1 means unlimited
       if (limits.maxToolCalls > 0 && entry.toolCalls > limits.maxToolCalls) {
         entry.blocked = true;
         const reason = `[heartbeat-guard] Tool call limit exceeded: ${entry.toolCalls}/${limits.maxToolCalls} (trigger=${entry.trigger}, agent=${entry.agentId})`;
@@ -115,6 +121,7 @@ export default definePluginEntry({
       }
     });
 
+    // --- Hook 4: Cleanup ---
     api.on("agent_end", (_event, ctx) => {
       const key = runKey(ctx);
       const entry = runs.get(key);

@@ -1,0 +1,33 @@
+{
+  "id": "role-guard",
+  "name": "Role Guard",
+  "description": "Deterministic role enforcement — blocks file writes for coordinator agents, escalates violations to Governor.",
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "enabled": {
+        "type": "boolean",
+        "description": "Enable/disable the guard (default: true)"
+      },
+      "agents": {
+        "type": "array",
+        "description": "Agent IDs to guard — typically your coordinator agents (default: [\"main\"])",
+        "items": { "type": "string" }
+      },
+      "blockedTools": {
+        "type": "array",
+        "description": "Tool names to block unconditionally (default: [\"write\", \"edit\", \"apply_patch\"])",
+        "items": { "type": "string" }
+      },
+      "opsAgent": {
+        "type": "string",
+        "description": "Name/ID of the agent that handles quick ops tasks — shown in block messages (e.g. \"larry\")"
+      },
+      "projectAgent": {
+        "type": "string",
+        "description": "Name/ID of the agent that handles project/feature work — shown in block messages (e.g. \"pm\")"
+      }
+    }
+  }
+}

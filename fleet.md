@@ -43,7 +43,18 @@ Default fallbacks: primary cloud → local model (if configured)
 
 - Only {{AGENT_MAIN}} sends to Telegram (message tool). All others escalate via `sessions_spawn`.
 - Heartbeats use `isolatedSession: true` + `lightContext: true` (fleet-wide).
-- heartbeat-guard plugin caps tool calls per trigger type (heartbeat: 10, cron: 30, user: unlimited).
+
+## Guard Plugins
+
+Three runtime plugins enforce structural constraints (see `plugins/` for source):
+
+| Plugin | What it does | Scope |
+|--------|-------------|-------|
+| **heartbeat-guard** | Caps tool calls + tokens per run. Blocks when exceeded. | All agents |
+| **announce-guard** | Suppresses subagent completion noise via system-prompt override. | Coordinators |
+| **role-guard** | Blocks file writes + exec write patterns for coordinators. Injects delegation guidance. | Coordinators |
+
+Configured in `openclaw.json` → `plugins.entries`. See each plugin's `openclaw.plugin.json` for config schema.
 
 ## Governance Audit
 

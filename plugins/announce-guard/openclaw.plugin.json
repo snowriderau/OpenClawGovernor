@@ -1,0 +1,20 @@
+{
+  "id": "announce-guard",
+  "name": "Announce Guard",
+  "description": "Suppresses subagent announce forwarding for coordinator agents via system-prompt override.",
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "enabled": {
+        "type": "boolean",
+        "description": "Enable/disable the guard (default: true)"
+      },
+      "agents": {
+        "type": "array",
+        "description": "Agent IDs to guard (default: [\"main\"])",
+        "items": { "type": "string" }
+      }
+    }
+  }
+}

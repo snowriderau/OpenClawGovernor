@@ -52,14 +52,34 @@ SSH to the target machine and set up the foundation.
 5. Verify {{AGENT_MAIN}} heartbeat is working and reaching notification channel
 ```
 
-### 2.4 heartbeat-guard Plugin
+### 2.4 Guard Plugins
+
+Deploy all three guard plugins from `plugins/` to the target machine:
+
 ```
-1. Verify plugin exists at ~/.openclaw/plugins/heartbeat-guard/
-2. If missing, build from specs/FEAT-020_heartbeat_guard/ (BUILD_REQUIREMENTS.md has steps)
-3. Register in openclaw.json plugins.entries (see SPEC.md for config schema)
-4. Restart gateway and verify: openclaw plugins list
-5. Check ~/.openclaw/logs/heartbeat-guard.log after first heartbeat runs
+1. Copy plugins to target:
+   scp -r plugins/heartbeat-guard/ <target>:~/.openclaw/plugins/heartbeat-guard/
+   scp -r plugins/announce-guard/  <target>:~/.openclaw/plugins/announce-guard/
+   scp -r plugins/role-guard/      <target>:~/.openclaw/plugins/role-guard/
+
+2. Register all three in openclaw.json plugins.entries:
+   - heartbeat-guard: set limits per trigger type (see plugins/heartbeat-guard/README.md)
+   - announce-guard:  set guarded agents (default: ["main"])
+   - role-guard:      set guarded agents, opsAgent, and projectAgent names
+
+3. Validate and restart:
+   openclaw config validate
+   systemctl --user restart openclaw-gateway.service
+
+4. Verify all plugins loaded:
+   openclaw plugins list
+
+5. Check logs after first heartbeat:
+   tail -f ~/.openclaw/logs/heartbeat-guard.log
+   cat /tmp/openclaw-governor-alerts.jsonl
 ```
+
+See `plugins/README.md` for full config examples and deployment instructions.
 
 ### 2.5 PM Agent
 ```
@@ -143,6 +163,7 @@ project-name/
 |------|-------|
 | Feature roadmap | `feature_map.md` |
 | Agent fleet | `fleet.md` |
+| Guard plugins | `plugins/` (heartbeat-guard, announce-guard, role-guard) |
 | Workspace examples | `docs/workspace-examples/` |
 | Project template | `docs/project-examples/spec-first-starter/` |
 | Operational best practices | `docs/best-practices.md` |
